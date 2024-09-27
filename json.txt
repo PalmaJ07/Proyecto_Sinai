@@ -1,0 +1,9 @@
+  {
+    "name": "Angela Berrios",
+    "id_personal": "281-250503-3425M",
+    "phone": "88357378",
+    "username": "angela.berrios",
+    "password": "rock3234",
+    "user_type": 1,
+    "estado": 0
+  }
