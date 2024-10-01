@@ -1,15 +1,155 @@
-  {
-    "name": "Angela Berrios",
-    "id_personal": "281-250503-3425M",
-    "phone": "88357378",
-    "username": "angela.berrios",
-    "password": "rock3234",
-    "user_type": 1,
-    "estado": 0
-  }
+************urls disponibles************
+/api/login/
+/api/logout/
+/api/user/empleados/index/
+/api/user/empleado/profile/ 
+/api/user/empleado/create/ 
+/api/user/empleado/edit/
+/api/user/empleado/update/ 
+/api/user/empleado/delete/
+/api/user/empleado/activate/
+/api/user/empleado/changePassword/  
 
-  http://127.0.0.1:8000/api/users/filtertype/?user_type=1&page_size=2&page=2
-  {
-  "username": "angela.berrios",
+************Pruebas para el api index************
+GET /api/user/empleado/index/ -> Muestra todos los usuarios, paginados en grupos de 10.
+GET /api/user/empleado/index/?page_size=5&page=1 -> Muestra la primera página con 5 usuarios por página.
+GET /api/user/empleado/index/?user_type=1 -> Filtra los usuarios cuyo user_type es 1. La paginación sigue activa.
+GET /api/user/empleado/index/?estado=1 -> Filtra los usuarios que están activos (estado=1). La paginación sigue activa.
+GET /api/user/empleado/index/?search=john -> Filtro por nombre
+GET /api/user/empleado/index/?search=88357378 -> Filtro por numero
+GET /api/user/empleado/index/?search=281-250503-3425M -> Filtro por cedula
+GET /api/user/empleado/index/?user_type=1&estado=1&search=john&page_size=5&page=2 -> Combinaciones
+
+
+************Pruebas para el api login ************
+{
+  "username": "jairo.palma",
     "password": "rock3234"
 }
+
+  
+ 
+
+{
+  "name": "Angela Berrios",
+  "id_personal": "281-250503-3425M",
+  "phone": "88357378",
+  "username": "angela.berrios",
+  "password": "rock3234",
+  "user_type": 1,
+  "estado": 0
+}
+
+http://127.0.0.1:8000/api/users/filtertype/?user_type=1&page_size=2&page=2
+
+
+
+
+****************Codigo de las primeras 3 funciones****************
+
+   
+class UserPagination(PageNumberPagination):
+    page_size = 5  # Valor por defecto
+    page_size_query_param = 'page_size'  # Permite definir el tamaño de página a través de la URL
+    max_page_size = 100  # Tamaño máximo que se puede solicitar
+
+class UserListView(APIView):
+    def get(self, request):
+        token = request.COOKIES.get('jwt')
+
+        if not token:
+            raise AuthenticationFailed('Unauthenticated!')
+
+        try:
+            payload = jwt.decode(token, 'secret', algorithms=['HS256'])
+        except jwt.ExpiredSignatureError:
+            raise AuthenticationFailed('Unauthenticated!')
+        except jwt.DecodeError:
+            raise AuthenticationFailed('Invalid token!')
+
+        # Obtener todos los usuarios
+        users = User.objects.all()
+
+        # Obtener el tamaño de página desde los parámetros de consulta, o usar el valor por defecto
+        page_size = request.GET.get('page_size', 5)
+        paginator = UserPagination()
+        paginator.page_size = int(page_size)  # Convertir a entero
+
+        page = request.GET.get('page')  # Obtener el número de página
+        paginated_users = paginator.paginate_queryset(users, request)
+
+        # Serializar los usuarios
+        serializer = UserSerializer(paginated_users, many=True)
+
+        # Devolver la respuesta paginada
+        return paginator.get_paginated_response(serializer.data)
+
+class UserFilterView(APIView):
+    def get(self, request):
+        token = request.COOKIES.get('jwt')
+
+        if not token:
+            raise AuthenticationFailed('Unauthenticated!')
+
+        try:
+            payload = jwt.decode(token, 'secret', algorithms=['HS256'])
+        except jwt.ExpiredSignatureError:
+            raise AuthenticationFailed('Unauthenticated!')
+        except jwt.DecodeError:
+            raise AuthenticationFailed('Invalid token!')
+
+        # Obtener todos los usuarios
+        users = User.objects.all()
+
+        # Filtrar por estado si se proporciona en la consulta
+        estado = request.GET.get('estado')
+        if estado is not None:
+            # Convertir a entero
+            estado = int(estado)  # Se espera que sea 1 o 0
+            users = users.filter(estado=estado)
+
+        # Configurar paginación
+        paginator = UserPagination()
+        paginated_users = paginator.paginate_queryset(users, request)
+
+        # Serializar los usuarios
+        serializer = UserSerializer(paginated_users, many=True)
+
+        # Devolver la respuesta paginada
+        return paginator.get_paginated_response(serializer.data)
+
+class UserTypeFilterView(APIView):
+    def get(self, request):
+        token = request.COOKIES.get('jwt')
+
+        if not token:
+            raise AuthenticationFailed('Unauthenticated!')
+
+        try:
+            payload = jwt.decode(token, 'secret', algorithms=['HS256'])
+        except jwt.ExpiredSignatureError:
+            raise AuthenticationFailed('Unauthenticated!')
+        except jwt.DecodeError:
+            raise AuthenticationFailed('Invalid token!')
+
+        # Obtener el tipo de usuario desde los parámetros de consulta (GET)
+        user_type = request.GET.get('user_type')
+
+        if not user_type:
+            return Response({'error': 'user_type parameter is required'}, status=400)
+
+        # Filtrar usuarios por `user_type`
+        users = User.objects.filter(user_type__id=user_type)
+
+        # Configurar paginación
+        paginator = PageNumberPagination()
+        paginator.page_size = request.GET.get('page_size', 5)  # Tamaño de página por defecto: 5
+
+        # Paginación de los usuarios filtrados
+        paginated_users = paginator.paginate_queryset(users, request)
+
+        # Serializar los usuarios paginados
+        serializer = UserSerializer(paginated_users, many=True)
+
+        # Devolver la respuesta paginada
+        return paginator.get_paginated_response(serializer.data)

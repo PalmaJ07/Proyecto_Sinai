@@ -1,3 +1,4 @@
+from django.db.models import Q
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from .serializers import UserSerializer
@@ -62,7 +63,69 @@ class LogoutView(APIView):
         return response
     
 #Controlador de index - user/empleados/index/
+class CustomPagination(PageNumberPagination):
+    def paginate_queryset(self, queryset, request, view=None):
+        # Tamaño de página por defecto es 10 si no se especifica
+        page_size = request.GET.get('page_size', 10)
+        self.page_size = int(page_size)
+        return super().paginate_queryset(queryset, request)
 
+    def get_paginated_response(self, data):
+        return Response({
+            'users': data,
+            'total_pages': self.page.paginator.num_pages,
+            'current_page': self.page.number,
+            'page_size': self.page_size,
+            'total_users': self.page.paginator.count,
+        })
+
+class IndexView(APIView):
+    def get(self, request):
+        # Autenticación mediante JWT
+        token = request.COOKIES.get('jwt')
+
+        if not token:
+            raise AuthenticationFailed('Unauthenticated!')
+
+        try:
+            payload = jwt.decode(token, 'secret', algorithms=['HS256'])
+        except jwt.ExpiredSignatureError:
+            raise AuthenticationFailed('Unauthenticated!')
+        except jwt.DecodeError:
+            raise AuthenticationFailed('Invalid token!')
+
+        # Obtener todos los usuarios
+        users = User.objects.all()
+
+        # Filtro por user_type (0 o 1)
+        user_type = request.GET.get('user_type')
+        if user_type is not None:
+            users = users.filter(user_type__id=user_type)
+
+        # Filtro por estado (0 o 1)
+        estado = request.GET.get('estado')
+        if estado is not None:
+            users = users.filter(estado=estado)
+
+        # Filtro por búsqueda parcial (nombre, username, phone o id_personal)
+        search_query = request.GET.get('search')
+        if search_query:
+            users = users.filter(
+                Q(name__icontains=search_query) |
+                Q(username__icontains=search_query) |
+                Q(phone__icontains=search_query) |  # Para números como 88357378
+                Q(id_personal__icontains=search_query)  # Para formatos como 281-250503-3425M
+            )
+
+        # Configurar paginación
+        paginator = CustomPagination()
+        paginated_users = paginator.paginate_queryset(users, request)
+
+        # Serializar los usuarios paginados
+        serializer = UserSerializer(paginated_users, many=True)
+
+        # Devolver la respuesta paginada
+        return paginator.get_paginated_response(serializer.data)
 
 
 #Controlador de usuario logueado - user/empleados/profile/
@@ -138,114 +201,6 @@ class RegisterView(APIView):
         # Devolver la respuesta con los datos creados
         return Response(serializer.data)
 
-
-
-    
-class UserPagination(PageNumberPagination):
-    page_size = 5  # Valor por defecto
-    page_size_query_param = 'page_size'  # Permite definir el tamaño de página a través de la URL
-    max_page_size = 100  # Tamaño máximo que se puede solicitar
-
-class UserListView(APIView):
-    def get(self, request):
-        token = request.COOKIES.get('jwt')
-
-        if not token:
-            raise AuthenticationFailed('Unauthenticated!')
-
-        try:
-            payload = jwt.decode(token, 'secret', algorithms=['HS256'])
-        except jwt.ExpiredSignatureError:
-            raise AuthenticationFailed('Unauthenticated!')
-        except jwt.DecodeError:
-            raise AuthenticationFailed('Invalid token!')
-
-        # Obtener todos los usuarios
-        users = User.objects.all()
-
-        # Obtener el tamaño de página desde los parámetros de consulta, o usar el valor por defecto
-        page_size = request.GET.get('page_size', 5)
-        paginator = UserPagination()
-        paginator.page_size = int(page_size)  # Convertir a entero
-
-        page = request.GET.get('page')  # Obtener el número de página
-        paginated_users = paginator.paginate_queryset(users, request)
-
-        # Serializar los usuarios
-        serializer = UserSerializer(paginated_users, many=True)
-
-        # Devolver la respuesta paginada
-        return paginator.get_paginated_response(serializer.data)
-
-class UserFilterView(APIView):
-    def get(self, request):
-        token = request.COOKIES.get('jwt')
-
-        if not token:
-            raise AuthenticationFailed('Unauthenticated!')
-
-        try:
-            payload = jwt.decode(token, 'secret', algorithms=['HS256'])
-        except jwt.ExpiredSignatureError:
-            raise AuthenticationFailed('Unauthenticated!')
-        except jwt.DecodeError:
-            raise AuthenticationFailed('Invalid token!')
-
-        # Obtener todos los usuarios
-        users = User.objects.all()
-
-        # Filtrar por estado si se proporciona en la consulta
-        estado = request.GET.get('estado')
-        if estado is not None:
-            # Convertir a entero
-            estado = int(estado)  # Se espera que sea 1 o 0
-            users = users.filter(estado=estado)
-
-        # Configurar paginación
-        paginator = UserPagination()
-        paginated_users = paginator.paginate_queryset(users, request)
-
-        # Serializar los usuarios
-        serializer = UserSerializer(paginated_users, many=True)
-
-        # Devolver la respuesta paginada
-        return paginator.get_paginated_response(serializer.data)
-
-class UserTypeFilterView(APIView):
-    def get(self, request):
-        token = request.COOKIES.get('jwt')
-
-        if not token:
-            raise AuthenticationFailed('Unauthenticated!')
-
-        try:
-            payload = jwt.decode(token, 'secret', algorithms=['HS256'])
-        except jwt.ExpiredSignatureError:
-            raise AuthenticationFailed('Unauthenticated!')
-        except jwt.DecodeError:
-            raise AuthenticationFailed('Invalid token!')
-
-        # Obtener el tipo de usuario desde los parámetros de consulta (GET)
-        user_type = request.GET.get('user_type')
-
-        if not user_type:
-            return Response({'error': 'user_type parameter is required'}, status=400)
-
-        # Filtrar usuarios por `user_type`
-        users = User.objects.filter(user_type__id=user_type)
-
-        # Configurar paginación
-        paginator = PageNumberPagination()
-        paginator.page_size = request.GET.get('page_size', 5)  # Tamaño de página por defecto: 5
-
-        # Paginación de los usuarios filtrados
-        paginated_users = paginator.paginate_queryset(users, request)
-
-        # Serializar los usuarios paginados
-        serializer = UserSerializer(paginated_users, many=True)
-
-        # Devolver la respuesta paginada
-        return paginator.get_paginated_response(serializer.data)
 
 class UpdateUserStatusView(APIView):
     def patch(self, request, user_id):
