@@ -13,3 +13,14 @@ urlpatterns = [
     path('users/delete/', DeleteUserView.as_view(), name='user-delete'),
 
 ]
+
+"""
+user/empleados/index
+user/empleados/profile
+user/empleados/create
+user/empleados/edit
+user/empleados/update 
+user/empleados/delete
+user/empleados/activate
+user/empleados/changePassword
+"""
