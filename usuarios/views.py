@@ -60,6 +60,10 @@ class LogoutView(APIView):
             'message': 'success'
         }
         return response
+    
+#Controlador de index - user/empleados/index/
+
+
 
 #Controlador de usuario logueado - user/empleados/profile/
 class UserView(APIView):
