@@ -6,85 +6,8 @@ from rest_framework.exceptions import NotFound,AuthenticationFailed
 from rest_framework.pagination import PageNumberPagination
 from .models import User
 import jwt, datetime
-
-# Create your views here.
-
-"""class RegisterView(APIView):
-    def post(self, request):
-        serializer = UserSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response(serializer.data)"""
     
-#Register
-class RegisterView(APIView):
-    def post(self, request):
-        # Extraer el token JWT de la cookie
-        token = request.COOKIES.get('jwt')
-
-        if not token:
-            raise AuthenticationFailed('Unauthenticated!')
-
-        try:
-            payload = jwt.decode(token, 'secret', algorithms=['HS256'])
-        except jwt.ExpiredSignatureError:
-            raise AuthenticationFailed('Unauthenticated!')
-        except jwt.DecodeError:
-            raise AuthenticationFailed('Invalid token!')
-
-        # Obtener el usuario que está realizando la solicitud
-        current_user = User.objects.filter(id=payload['id']).first()
-
-        if not current_user:
-            raise AuthenticationFailed('User not found!')
-
-        # Crear un diccionario con los datos enviados en la solicitud
-        data = request.data.copy()
-
-        # Asignar el id del usuario actual como el que creó el registro
-        data['created_user'] = current_user.id
-        # Asignar null a update_user y deleted_user
-        data['update_user'] = None
-        data['deleted_user'] = None
-
-        # Serializar los datos
-        serializer = UserSerializer(data=data)
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-
-        # Devolver la respuesta con los datos creados
-        return Response(serializer.data)
-
-#Login
-# class LoginView(APIView):
-    def post(self, request):
-        username = request.data['username']
-        password = request.data['password']
-
-        user = User.objects.filter(username=username).first()
-
-        if user is None:
-            raise AuthenticationFailed('Username not found!')
-
-        if not user.check_password(password):
-            raise AuthenticationFailed('Incorrect password!')
-
-        payload = {
-            'id': user.id,
-            'exp': datetime.datetime.now(datetime.UTC) + datetime.timedelta(minutes=60),
-            'iat': datetime.datetime.now(datetime.UTC)
-        }
-
-        token = jwt.encode(payload, 'secret', algorithm='HS256')
-
-        response = Response()
-
-        response.set_cookie(key='jwt', value=token, httponly=True)
-        response.data = {
-            'jwt': token
-        }
-        return response
-
+#Controlador de login - api/login/
 class LoginView(APIView):
     def post(self, request):
         username = request.data['username']
@@ -128,27 +51,17 @@ class LoginView(APIView):
 
         return response
     
-# class UserView(APIView):
+#Controlador de logout - api/logout/
+class LogoutView(APIView):
+    def post(self, request):
+        response = Response()
+        response.delete_cookie('jwt')
+        response.data = {
+            'message': 'success'
+        }
+        return response
 
-#     def get(self, request):
-#         token = request.COOKIES.get('jwt')
-
-#         if not token:
-#             raise AuthenticationFailed('Unauthenticated!')
-
-#         try:
-#             payload = jwt.decode(token, 'secret', algorithms=['HS256'])
-#         except jwt.ExpiredSignatureError:
-#             raise AuthenticationFailed('Unauthenticated!')
-#         except jwt.DecodeError:
-#             raise AuthenticationFailed('Invalid token!')
-
-#         user = User.objects.filter(id=payload['id']).first()
-
-#         serializer = UserSerializer(user)
-#         return Response(serializer.data)
-
-#UserView
+#Controlador de usuario logueado - user/empleados/profile/
 class UserView(APIView):
 
     def get(self, request):
@@ -181,6 +94,48 @@ class UserView(APIView):
         }
 
         return Response(response_data)
+    
+#Controlador de register
+class RegisterView(APIView):
+    def post(self, request):
+        # Extraer el token JWT de la cookie
+        token = request.COOKIES.get('jwt')
+
+        if not token:
+            raise AuthenticationFailed('Unauthenticated!')
+
+        try:
+            payload = jwt.decode(token, 'secret', algorithms=['HS256'])
+        except jwt.ExpiredSignatureError:
+            raise AuthenticationFailed('Unauthenticated!')
+        except jwt.DecodeError:
+            raise AuthenticationFailed('Invalid token!')
+
+        # Obtener el usuario que está realizando la solicitud
+        current_user = User.objects.filter(id=payload['id']).first()
+
+        if not current_user:
+            raise AuthenticationFailed('User not found!')
+
+        # Crear un diccionario con los datos enviados en la solicitud
+        data = request.data.copy()
+
+        # Asignar el id del usuario actual como el que creó el registro
+        data['created_user'] = current_user.id
+        # Asignar null a update_user y deleted_user
+        data['update_user'] = None
+        data['deleted_user'] = None
+
+        # Serializar los datos
+        serializer = UserSerializer(data=data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        # Devolver la respuesta con los datos creados
+        return Response(serializer.data)
+
+
+
     
 class UserPagination(PageNumberPagination):
     page_size = 5  # Valor por defecto
@@ -404,12 +359,5 @@ class DeleteUserView(APIView):
 
         return Response({'message': 'User marked as deleted successfully.'})
 
-class LogoutView(APIView):
-    def post(self, request):
-        response = Response()
-        response.delete_cookie('jwt')
-        response.data = {
-            'message': 'success'
-        }
-        return response
+
 
