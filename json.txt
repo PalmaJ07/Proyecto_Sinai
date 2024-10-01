@@ -7,3 +7,9 @@
     "user_type": 1,
     "estado": 0
   }
+
+  http://127.0.0.1:8000/api/users/filtertype/?user_type=1&page_size=2&page=2
+  {
+  "username": "angela.berrios",
+    "password": "rock3234"
+}
