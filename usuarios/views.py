@@ -163,7 +163,7 @@ class UserView(APIView):
 
         return Response(response_data)
     
-#Controlador de register
+#Controlador de register - /api/user/empleado/create/
 class RegisterView(APIView):
     def post(self, request):
         # Extraer el token JWT de la cookie
@@ -201,6 +201,60 @@ class RegisterView(APIView):
 
         # Devolver la respuesta con los datos creados
         return Response(serializer.data)
+
+#Controlador de modificar - /api/user/empleado/update/
+class UpdateUserView(APIView):
+    def patch(self, request, encrypted_id):
+        # Extraer el token JWT de la cookie para obtener el usuario logueado
+        token = request.COOKIES.get('jwt')
+
+        if not token:
+            raise AuthenticationFailed('Unauthenticated!')
+
+        try:
+            payload = jwt.decode(token, 'secret', algorithms=['HS256'])
+        except jwt.ExpiredSignatureError:
+            raise AuthenticationFailed('Unauthenticated!')
+        except jwt.DecodeError:
+            raise AuthenticationFailed('Invalid token!')
+
+        # Decodificar el encrypted_id para obtener el ID real
+        try:
+            user_id = base64.urlsafe_b64decode(encrypted_id).decode()
+        except Exception as e:
+            return Response({'error': 'Invalid encrypted ID.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            # Buscar el usuario por ID
+            user = User.objects.get(id=user_id)
+        except User.DoesNotExist:
+            return Response({'error': 'User not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+        # Obtener los datos a actualizar desde la solicitud
+        name = request.data.get('name')
+        id_personal = request.data.get('id_personal')
+        phone = request.data.get('phone')
+        username = request.data.get('username')
+        user_type = request.data.get('user_type')
+
+        # Actualizar solo los campos que se han pasado
+        if name is not None:
+            user.name = name
+        if id_personal is not None:
+            user.id_personal = id_personal
+        if phone is not None:
+            user.phone = phone
+        if username is not None:
+            user.username = username
+        if user_type is not None:
+            user.user_type = user_type
+
+        # Guardar los cambios en la base de datos
+        user.save()
+
+        return Response({'message': 'User updated successfully.', 'user': user.id}, status=status.HTTP_200_OK)
+
+
 
 #Controlador para modificar el estado  - /api/user/empleado/activate/ 
 class UpdateUserStatusView(APIView):
@@ -276,7 +330,44 @@ class DeleteUserView(APIView):
 
         return Response({'message': 'User marked as deleted successfully.'}, status=status.HTTP_200_OK)
 
+#Controlador para cambiar password - user/empleado/changePassword/
+class ChangePasswordView(APIView):
+    def patch(self, request, encrypted_id):
+        # Extraer el token JWT de la cookie para obtener el usuario logueado
+        token = request.COOKIES.get('jwt')
 
+        if not token:
+            raise AuthenticationFailed('Unauthenticated!')
 
+        try:
+            payload = jwt.decode(token, 'secret', algorithms=['HS256'])
+        except jwt.ExpiredSignatureError:
+            raise AuthenticationFailed('Unauthenticated!')
+        except jwt.DecodeError:
+            raise AuthenticationFailed('Invalid token!')
+
+        # Decodificar el encrypted_id para obtener el ID real
+        try:
+            user_id = base64.urlsafe_b64decode(encrypted_id).decode()
+        except Exception as e:
+            return Response({'error': 'Invalid encrypted ID.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            # Buscar el usuario por ID
+            user = User.objects.get(id=user_id)
+        except User.DoesNotExist:
+            return Response({'error': 'User not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+        # Obtener la nueva contraseña desde el cuerpo de la solicitud
+        password = request.data.get('password')
+
+        if not password:
+            return Response({'error': 'Password is required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Establecer la nueva contraseña
+        user.set_password(password)
+        user.save()
+
+        return Response({'message': 'Password changed successfully.'}, status=status.HTTP_200_OK)
 
 

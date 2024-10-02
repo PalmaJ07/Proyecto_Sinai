@@ -44,3 +44,13 @@ http://127.0.0.1:8000/api/user/empleado/activate/<str:encrypted_id>/
   "estado": 0
 }
 
+************Pruebas para editar usuarios************
+PATCH http://127.0.0.1:8000/api/user/empleado/update/Mw==/
+{
+    "name": "Nuevo Nombre",
+    "id_personal": "281-250503-3425M",
+    "phone": "88357378",
+    "username": "nuevo_usuario",
+    "user_type": 1
+}
+nota: Aqui se psan todos los atributos, pero podria psar solo name y solo ese se cambiaria
