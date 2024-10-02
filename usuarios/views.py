@@ -1,3 +1,4 @@
+import base64
 from django.db.models import Q
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -201,9 +202,9 @@ class RegisterView(APIView):
         # Devolver la respuesta con los datos creados
         return Response(serializer.data)
 
-
+#Controlador para modificar el estado  - /api/user/empleado/activate/ 
 class UpdateUserStatusView(APIView):
-    def patch(self, request, user_id):
+    def patch(self, request, encrypted_id):
         token = request.COOKIES.get('jwt')
 
         if not token:
@@ -216,31 +217,28 @@ class UpdateUserStatusView(APIView):
         except jwt.DecodeError:
             raise AuthenticationFailed('Invalid token!')
 
+        # Decodificar el encrypted_id para obtener el id real
+        decoded_id = base64.urlsafe_b64decode(encrypted_id).decode()
+
         # Buscar el usuario por ID
         try:
-            user = User.objects.get(id=user_id)
+            user = User.objects.get(id=decoded_id)
         except User.DoesNotExist:
             raise NotFound('User not found!')
 
-        # Obtener el nuevo estado del request
-        new_status = request.data.get('estado')
+        # Cambiar el estado del usuario
+        user.estado = 1 if user.estado == 0 else 0
+        user.save()
 
-        # Validar que el nuevo estado sea 0 o 1
-        if new_status is not None and new_status in [0, 1]:
-            user.estado = new_status
-            user.save()
-            return Response({
-                'message': 'User status updated successfully.',
-                'user_id': user.id,
-                'new_estado': user.estado
-            }, status=status.HTTP_200_OK)
-        else:
-            return Response({
-                'error': 'Invalid status value. Use 0 for Inactive or 1 for Active.'
-            }, status=status.HTTP_400_BAD_REQUEST)
+        return Response({
+            'message': 'User status updated successfully.',
+            'encrypted_id': encrypted_id,
+            'new_estado': user.estado
+        }, status=status.HTTP_200_OK)
 
+#Controlador para eliminar usuario - /api/user/empleado/delete/ 
 class DeleteUserView(APIView):
-    def delete(self, request):
+    def delete(self, request, encrypted_id):
         # Extraer el token JWT de la cookie para obtener el usuario logueado
         token = request.COOKIES.get('jwt')
 
@@ -257,17 +255,17 @@ class DeleteUserView(APIView):
         # Obtener el ID del usuario logueado que está eliminando
         logged_in_user = User.objects.get(id=payload['id'])
 
-        # Obtener el ID del usuario que se va a eliminar desde el cuerpo de la solicitud
-        user_id = request.data.get('id')
-
-        if not user_id:
-            return Response({'error': 'ID is required.'}, status=400)
+        # Decodificar el encrypted_id para obtener el ID real
+        try:
+            user_id = base64.urlsafe_b64decode(encrypted_id).decode()
+        except Exception as e:
+            return Response({'error': 'Invalid encrypted ID.'}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
             # Buscar el usuario por ID
             user_to_delete = User.objects.get(id=user_id)
         except User.DoesNotExist:
-            return Response({'error': 'User not found.'}, status=404)
+            return Response({'error': 'User not found.'}, status=status.HTTP_404_NOT_FOUND)
 
         # Actualizar los campos deleted_user y deleted_at
         user_to_delete.deleted_user = logged_in_user  # ID del usuario que está eliminando
@@ -276,47 +274,9 @@ class DeleteUserView(APIView):
         # Guardar los cambios en la base de datos
         user_to_delete.save()
 
-        return Response({'message': 'User marked as deleted successfully.'})
+        return Response({'message': 'User marked as deleted successfully.'}, status=status.HTTP_200_OK)
 
-class DeleteUserView(APIView):
-    def delete(self, request):
-        # Extraer el token JWT de la cookie para obtener el usuario logueado
-        token = request.COOKIES.get('jwt')
 
-        if not token:
-            raise AuthenticationFailed('Unauthenticated!')
-
-        try:
-            # Decodificar el token para obtener el payload
-            payload = jwt.decode(token, 'secret', algorithms=['HS256'])
-        except jwt.ExpiredSignatureError:
-            raise AuthenticationFailed('Unauthenticated!')
-        except jwt.DecodeError:
-            raise AuthenticationFailed('Invalid token!')
-
-        # Obtener el usuario logueado que realiza la acción de eliminación
-        logged_in_user = User.objects.get(id=payload['id'])
-
-        # Obtener el ID del usuario que se va a eliminar desde el cuerpo de la solicitud
-        user_id = request.data.get('id')
-
-        if not user_id:
-            return Response({'error': 'User ID is required.'}, status=400)
-
-        try:
-            # Buscar el usuario por ID
-            user_to_delete = User.objects.get(id=user_id)
-        except User.DoesNotExist:
-            return Response({'error': 'User not found.'}, status=404)
-
-        # Actualizar los campos deleted_user y deleted_at
-        user_to_delete.deleted_user = logged_in_user  # ID del usuario que está eliminando
-        user_to_delete.deleted_at = datetime.datetime.now()  # Fecha y hora actuales
-
-        # Guardar los cambios en la base de datos
-        user_to_delete.save()
-
-        return Response({'message': 'User marked as deleted successfully.'})
 
 
 

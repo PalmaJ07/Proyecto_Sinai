@@ -7,8 +7,6 @@ urlpatterns = [
     path('user/empleado/profile/', UserView.as_view(), name='profile'),
     path('user/empleado/create/', RegisterView.as_view(), name='create'),
     path('user/empleado/index/', IndexView.as_view(), name='index'),
-
-    path('users/update/status/<int:user_id>/', UpdateUserStatusView.as_view(), name='update-user-status'),
-    path('users/delete/', DeleteUserView.as_view(), name='user-delete'),
-
+    path('user/empleado/activate/<str:encrypted_id>/', UpdateUserStatusView.as_view(), name='update-user-status'),
+    path('user/empleado/delete/<str:encrypted_id>/', DeleteUserView.as_view(), name='user-delete'),
 ]

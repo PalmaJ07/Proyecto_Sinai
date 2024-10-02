@@ -1,14 +1,23 @@
+import base64
 from rest_framework import serializers
 from .models import User
 
 class UserSerializer(serializers.ModelSerializer):
+
+    encrypted_id = serializers.SerializerMethodField()
+
     class Meta:
         model = User
-        fields = ['id', 'name', 'id_personal', 'phone', 'username', 'password', 'user_type', 'estado',
+        fields = ['encrypted_id', 'name', 'id_personal', 'phone', 'username', 'password', 'user_type', 'estado',
                   'created_user', 'update_user', 'deleted_user']
         extra_kwargs = {
             'password': {'write_only': True}
        }
+    
+    # Método para encriptar el ID usando Base64
+    def get_encrypted_id(self, obj):
+        # Codificar el id en Base64
+        return base64.urlsafe_b64encode(str(obj.id).encode()).decode()
 
     def create(self, validated_data):
         password = validated_data.pop('password', None)
