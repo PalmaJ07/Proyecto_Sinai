@@ -1,6 +1,6 @@
 import base64
 from rest_framework import serializers
-from .models import User
+from .models import User, Cliente
 
 class UserSerializer(serializers.ModelSerializer):
 
@@ -26,3 +26,17 @@ class UserSerializer(serializers.ModelSerializer):
             instance.set_password(password)
         instance.save()
         return instance
+
+# Serializer para Cliente
+class ClienteSerializer(serializers.ModelSerializer):
+    encrypted_id = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Cliente
+        fields = ['encrypted_id', 'nombre', 'telefono', 'direccion', 'id_personal', 
+                  'created_user', 'update_user', 'deleted_user', 'created_at', 'update_at', 'deleted_at']
+
+    # Método para encriptar el ID usando Base64
+    def get_encrypted_id(self, obj):
+        # Codificar el id en Base64
+        return base64.urlsafe_b64encode(str(obj.id).encode()).decode()

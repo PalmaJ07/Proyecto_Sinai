@@ -51,3 +51,29 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     def __str__(self):
         return self.username
+
+class Cliente(models.Model):
+    #Id del cliente
+    id = models.AutoField(primary_key=True)
+    #Nombre del cliente
+    nombre = models.CharField(max_length=255)
+    #Telefono del cliente 
+    telefono = models.CharField(max_length=15)
+    #Direccion del cliente 
+    direccion = models.CharField(max_length=255)
+    #Cedula del cliente 
+    id_personal = models.CharField(max_length=255, unique=True)
+    
+    # Columnas adicionales
+    created_user = models.ForeignKey('User', on_delete=models.SET_NULL, related_name='created_clients', null=True, blank=True)
+    update_user = models.ForeignKey('User', on_delete=models.SET_NULL, related_name='updated_clients', null=True, blank=True)
+    deleted_user = models.ForeignKey('User', on_delete=models.SET_NULL, related_name='deleted_clients', null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    update_at = models.DateTimeField(auto_now=True)
+    deleted_at = models.DateTimeField(null=True, blank=True)
+
+    #Campos requeridos
+    REQUIRED_FIELDS = ['nombre', 'id_personal', 'telefono', 'direccion']
+
+    def __str__(self):
+        return self.nombre
