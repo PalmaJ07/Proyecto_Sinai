@@ -54,3 +54,7 @@ PATCH http://127.0.0.1:8000/api/user/empleado/update/Mw==/
     "user_type": 1
 }
 nota: Aqui se psan todos los atributos, pero podria psar solo name y solo ese se cambiaria
+
+
+************Pruebas para agregar cliente************
+

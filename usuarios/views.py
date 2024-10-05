@@ -2,12 +2,13 @@ import base64
 from django.db.models import Q
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from .serializers import UserSerializer
+from .serializers import UserSerializer, ClienteSerializer
 from rest_framework import status
 from rest_framework.exceptions import NotFound,AuthenticationFailed
 from rest_framework.pagination import PageNumberPagination
-from .models import User
+from .models import User, Cliente
 import jwt, datetime
+from django.utils import timezone
     
 #Controlador de login - api/login/
 class LoginView(APIView):
@@ -370,4 +371,168 @@ class ChangePasswordView(APIView):
 
         return Response({'message': 'Password changed successfully.'}, status=status.HTTP_200_OK)
 
+#Controlador de register - /api/user/cliente/create/
+class RegisterClient(APIView):
+    def post(self, request):
+        # Extraer el token JWT de la cookie
+        token = request.COOKIES.get('jwt')
 
+        if not token:
+            raise AuthenticationFailed('Unauthenticated!')
+
+        try:
+            payload = jwt.decode(token, 'secret', algorithms=['HS256'])
+        except jwt.ExpiredSignatureError:
+            raise AuthenticationFailed('Unauthenticated!')
+        except jwt.DecodeError:
+            raise AuthenticationFailed('Invalid token!')
+
+        # Obtener el usuario que está realizando la solicitud
+        current_user = User.objects.filter(id=payload['id']).first()
+
+        if not current_user:
+            raise AuthenticationFailed('User not found!')
+
+        # Crear un diccionario con los datos enviados en la solicitud
+        data = request.data.copy()
+
+        # Asignar el id del usuario actual como el que creó el registro
+        data['created_user'] = current_user.id
+        # Asignar null a update_user y deleted_user
+        data['update_user'] = None
+        data['deleted_user'] = None
+
+        # Serializar los datos
+        serializer = ClienteSerializer(data=data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        # Devolver la respuesta con los datos creados
+        return Response(serializer.data)
+
+#Controlador de modificar - /api/user/cliente/update/
+class UpdateClient(APIView):
+    def patch(self, request, encrypted_id):
+        # Extraer el token JWT de la cookie para obtener el usuario logueado
+        token = request.COOKIES.get('jwt')
+
+        if not token:
+            raise AuthenticationFailed('Unauthenticated!')
+
+        try:
+            payload = jwt.decode(token, 'secret', algorithms=['HS256'])
+        except jwt.ExpiredSignatureError:
+            raise AuthenticationFailed('Unauthenticated!')
+        except jwt.DecodeError:
+            raise AuthenticationFailed('Invalid token!')
+
+        # Decodificar el encrypted_id para obtener el ID real
+        try:
+            user_id = base64.urlsafe_b64decode(encrypted_id).decode()
+        except Exception as e:
+            return Response({'error': 'Invalid encrypted ID.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            # Buscar el usuario por ID
+            user = Cliente.objects.get(id=user_id)
+        except Cliente.DoesNotExist:
+            return Response({'error': 'User not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+        # Obtener los datos a actualizar desde la solicitud
+        nombre = request.data.get('nombre')
+        id_personal = request.data.get('id_personal')
+        telefono = request.data.get('telefono')
+        direccion = request.data.get('direccion')
+
+        # Actualizar solo los campos que se han pasado
+        if nombre is not None:
+            user.nombre = nombre
+        if id_personal is not None:
+            user.id_personal = id_personal
+        if telefono is not None:
+            user.telefono = telefono
+        if direccion is not None:
+            user.direccion = direccion
+            
+        # Guardar los cambios en la base de datos
+        user.save()
+
+        return Response({'message': 'Cliente updated successfully.', 'user': user_id}, status=status.HTTP_200_OK)
+
+#Controlador de index - user/cliente/index/
+class IndexClientView(APIView):
+    def get(self, request):
+        # Autenticación mediante JWT
+        token = request.COOKIES.get('jwt')
+
+        if not token:
+            raise AuthenticationFailed('Unauthenticated!')
+
+        try:
+            payload = jwt.decode(token, 'secret', algorithms=['HS256'])
+        except jwt.ExpiredSignatureError:
+            raise AuthenticationFailed('Unauthenticated!')
+        except jwt.DecodeError:
+            raise AuthenticationFailed('Invalid token!')
+
+        # Obtener todos los usuarios
+        clientes = Cliente.objects.all()
+
+        # Filtro por búsqueda parcial (nombre, telefono, id_personal)
+        search_query = request.GET.get('search')
+        if search_query:
+            clientes = clientes.filter(
+                Q(nombre__icontains=search_query) |
+                Q(telefono__icontains=search_query) |  # Para números como 88357378
+                Q(id_personal__icontains=search_query)  # Para formatos como 281-250503-3425M
+            )
+
+        # Configurar paginación
+        paginator = CustomPagination()
+        paginated_users = paginator.paginate_queryset(clientes, request)
+
+        # Serializar los usuarios paginados
+        serializer = ClienteSerializer(paginated_users, many=True)
+
+        # Devolver la respuesta paginada
+        return paginator.get_paginated_response(serializer.data)
+    
+#Controlador para eliminar usuario - /api/user/cliente/delete/ 
+class DeleteClientView(APIView):
+    def delete(self, request, encrypted_id):
+        # Extraer el token JWT de la cookie para obtener el usuario logueado
+        token = request.COOKIES.get('jwt')
+
+        if not token:
+            raise AuthenticationFailed('Unauthenticated!')
+
+        try:
+            payload = jwt.decode(token, 'secret', algorithms=['HS256'])
+        except jwt.ExpiredSignatureError:
+            raise AuthenticationFailed('Unauthenticated!')
+        except jwt.DecodeError:
+            raise AuthenticationFailed('Invalid token!')
+
+        # Obtener el ID del usuario logueado que está eliminando
+        logged_in_user = User.objects.get(id=payload['id'])
+
+        # Decodificar el encrypted_id para obtener el ID real
+        try:
+            user_id = base64.urlsafe_b64decode(encrypted_id).decode()
+        except Exception as e:
+            return Response({'error': 'Invalid encrypted ID.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            # Buscar el usuario por ID
+            user_to_delete = Cliente.objects.get(id=user_id)
+        except Cliente.DoesNotExist:
+            return Response({'error': 'User not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+        # Actualizar los campos deleted_user y deleted_at
+        user_to_delete.deleted_user = logged_in_user  # ID del usuario que está eliminando
+        user_to_delete.deleted_at = timezone.now()  # Hora y fecha actuales
+
+        # Guardar los cambios en la base de datos
+        user_to_delete.save()
+
+        return Response({'message': 'User marked as deleted successfully.'}, status=status.HTTP_200_OK)

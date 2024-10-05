@@ -68,6 +68,7 @@ class Cliente(models.Model):
     created_user = models.ForeignKey('User', on_delete=models.SET_NULL, related_name='created_clients', null=True, blank=True)
     update_user = models.ForeignKey('User', on_delete=models.SET_NULL, related_name='updated_clients', null=True, blank=True)
     deleted_user = models.ForeignKey('User', on_delete=models.SET_NULL, related_name='deleted_clients', null=True, blank=True)
+    
     created_at = models.DateTimeField(auto_now_add=True)
     update_at = models.DateTimeField(auto_now=True)
     deleted_at = models.DateTimeField(null=True, blank=True)

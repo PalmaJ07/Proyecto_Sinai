@@ -18,10 +18,10 @@ urlpatterns = [
 
     #Apis de usuarios - Clientes
 
-    # path('user/cliente/create/', RegisterView.as_view(), name='create'),
-    # path('user/cliente/update/<str:encrypted_id>/', UpdateUserView.as_view(), name='update - user'),
-    # path('user/cliente/index/', IndexView.as_view(), name='index'),
-    # path('user/cliente/delete/<str:encrypted_id>/', DeleteUserView.as_view(), name='user-delete'),
+    path('user/cliente/create/', RegisterClient.as_view(), name='CCliente'),
+    path('user/cliente/update/<str:encrypted_id>/', UpdateClient.as_view(), name='update - cliente'),
+    path('user/cliente/index/', IndexClientView.as_view(), name='index'),
+    path('user/cliente/delete/<str:encrypted_id>/', DeleteClientView.as_view(), name='user-delete'),
 
 ]
 
