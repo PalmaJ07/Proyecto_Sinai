@@ -43,8 +43,6 @@ class LoginView(APIView):
 
         # Preparar la respuesta
         response = Response()
-
-        # Establecer la cookie con el token JWT
         response.set_cookie(key='jwt', value=token, httponly=True)
 
         # Incluir el token JWT en la respuesta
