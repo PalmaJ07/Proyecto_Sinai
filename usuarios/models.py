@@ -21,7 +21,7 @@ class UserManager(BaseUserManager):
         return self.create_user(username, password, **extra_fields)
                                 
 
-#Funcion que tiene com funcion crear los diferentes tipos de usuarios
+#Funcion que tiene com funcion crear los diferentes tipos de usuariosu
 class User_Type(models.Model):
     #Id del tipo de usuario
     id = models.AutoField(primary_key=True)

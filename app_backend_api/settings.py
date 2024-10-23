@@ -90,6 +90,19 @@ DATABASES = {
     }
 }
 
+'''
+DATABASES = {
+    "default": {
+        "ENGINE": "django.db.backends.mysql",
+        "NAME": "bd_sinai",
+        "USER": "root",
+        "PASSWORD": "root3234!",
+        "HOST": "ls-ecfe9046383887e06491ace40fa7882744fc61bf.ctu28y8skvfr.us-east-2.rds.amazonaws.com",
+        "PORT": "3306",
+    }
+}
+'''
+
 
 # Password validation
 # https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
@@ -141,3 +154,10 @@ CORS_ALLOWED_ORIGINS = [
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+#SESSION_COOKIE_SAMESITE = 'Lax'
+#CSRF_COOKIE_SAMESITE = 'Lax'
+
+# Configuración de seguridad: Solo habilitar si el backend está en HTTPS
+#SESSION_COOKIE_SECURE = False  # Cambiar a True en producción si tienes HTTPS
+#CSRF_COOKIE_SECURE = False  # Cambiar a True en producción si tienes HTTPS

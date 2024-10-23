@@ -11,6 +11,55 @@ import jwt, datetime
 from django.utils import timezone
     
 #Controlador de login - api/login/
+
+"""
+class LoginView(APIView):
+    def post(self, request):
+        username = request.data['username']
+        password = request.data['password']
+
+        # Buscar el usuario por su username
+        user = User.objects.filter(username=username).first()
+
+        # Verificar si el usuario existe
+        if user is None:
+            raise AuthenticationFailed('Username not found!')
+
+        # Verificar si el usuario está inactivo (estado = 0)
+        if user.estado == 0:
+            raise AuthenticationFailed('Your account is disabled. Please contact support.')
+
+        # Verificar si la contraseña es correcta
+        if not user.check_password(password):
+            raise AuthenticationFailed('Incorrect password!')
+
+        # Crear el payload para el token JWT
+        payload = {
+            'id': user.id,
+            'exp': datetime.datetime.utcnow() + datetime.timedelta(minutes=60),
+            'iat': datetime.datetime.utcnow()
+        }
+
+        # Generar el token JWT
+        token = jwt.encode(payload, 'secret', algorithm='HS256')
+
+        # Preparar la respuesta
+        response = Response()
+
+        # Establecer la cookie con el token JWT
+        response.set_cookie(key='jwt', value=token, httponly=True, samesite='Lax', secure=False)
+
+        #
+        response['Authorization'] = token
+        # Incluir el token JWT en la respuesta
+        response.data = {
+            'jwt': token
+        }
+
+        return response
+"""
+
+
 class LoginView(APIView):
     def post(self, request):
         username = request.data['username']
@@ -83,6 +132,7 @@ class IndexView(APIView):
     def get(self, request):
         # Autenticación mediante JWT
         token = request.COOKIES.get('jwt')
+        #token = request.headers.get('Authorization')
 
         if not token:
             raise AuthenticationFailed('Unauthenticated!')
@@ -133,6 +183,7 @@ class UserView(APIView):
 
     def get(self, request):
         token = request.COOKIES.get('jwt')
+        #token = request.headers.get('Authorization')
 
         if not token:
             raise AuthenticationFailed('Unauthenticated!')
@@ -167,6 +218,7 @@ class RegisterView(APIView):
     def post(self, request):
         # Extraer el token JWT de la cookie
         token = request.COOKIES.get('jwt')
+        #token = request.headers.get('Authorization')
 
         if not token:
             raise AuthenticationFailed('Unauthenticated!')
@@ -206,6 +258,7 @@ class UpdateUserView(APIView):
     def patch(self, request, encrypted_id):
         # Extraer el token JWT de la cookie para obtener el usuario logueado
         token = request.COOKIES.get('jwt')
+        #token = request.headers.get('Authorization')
 
         if not token:
             raise AuthenticationFailed('Unauthenticated!')
@@ -259,7 +312,7 @@ class UpdateUserView(APIView):
 class UpdateUserStatusView(APIView):
     def patch(self, request, encrypted_id):
         token = request.COOKIES.get('jwt')
-
+        #token = request.headers.get('Authorization')
         if not token:
             raise AuthenticationFailed('Unauthenticated!')
 
@@ -294,7 +347,7 @@ class DeleteUserView(APIView):
     def delete(self, request, encrypted_id):
         # Extraer el token JWT de la cookie para obtener el usuario logueado
         token = request.COOKIES.get('jwt')
-
+        #token = request.headers.get('Authorization')
         if not token:
             raise AuthenticationFailed('Unauthenticated!')
 
@@ -334,7 +387,7 @@ class ChangePasswordView(APIView):
     def patch(self, request, encrypted_id):
         # Extraer el token JWT de la cookie para obtener el usuario logueado
         token = request.COOKIES.get('jwt')
-
+        #token = request.headers.get('Authorization')
         if not token:
             raise AuthenticationFailed('Unauthenticated!')
 
@@ -374,7 +427,7 @@ class RegisterClient(APIView):
     def post(self, request):
         # Extraer el token JWT de la cookie
         token = request.COOKIES.get('jwt')
-
+        #token = request.headers.get('Authorization')
         if not token:
             raise AuthenticationFailed('Unauthenticated!')
 
@@ -413,7 +466,7 @@ class UpdateClient(APIView):
     def patch(self, request, encrypted_id):
         # Extraer el token JWT de la cookie para obtener el usuario logueado
         token = request.COOKIES.get('jwt')
-
+        #token = request.headers.get('Authorization')
         if not token:
             raise AuthenticationFailed('Unauthenticated!')
 
@@ -462,7 +515,7 @@ class IndexClientView(APIView):
     def get(self, request):
         # Autenticación mediante JWT
         token = request.COOKIES.get('jwt')
-
+        #token = request.headers.get('Authorization')
         if not token:
             raise AuthenticationFailed('Unauthenticated!')
 
@@ -500,7 +553,7 @@ class DeleteClientView(APIView):
     def delete(self, request, encrypted_id):
         # Extraer el token JWT de la cookie para obtener el usuario logueado
         token = request.COOKIES.get('jwt')
-
+        #token = request.headers.get('Authorization')
         if not token:
             raise AuthenticationFailed('Unauthenticated!')
 
