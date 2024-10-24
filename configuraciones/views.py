@@ -13,7 +13,21 @@ import jwt, datetime
 from django.utils import timezone
     
 # Create your views here.
+class CustomPagination(PageNumberPagination):
+    def paginate_queryset(self, queryset, request, view=None):
+        # Tamaño de página por defecto es 10 si no se especifica
+        page_size = request.GET.get('page_size', 10)
+        self.page_size = int(page_size)
+        return super().paginate_queryset(queryset, request)
 
+    def get_paginated_response(self, data):
+        return Response({
+            'config': data,
+            'total_pages': self.page.paginator.num_pages,
+            'current_page': self.page.number,
+            'page_size': self.page_size,
+            'total_config': self.page.paginator.count,
+        })
 
 ################CATEGORIAS###########################
 class RegisterCategoria(APIView):
@@ -82,6 +96,7 @@ class UpdateCategoria(APIView):
         return Response({'message': 'Category updated successfully.'}, status=status.HTTP_200_OK)
 
 class IndexCategoriaView(APIView):
+    # Método GET para listar las categorías con paginación
     def get(self, request):
         # Autenticación mediante JWT
         token = request.COOKIES.get('jwt')
@@ -104,12 +119,13 @@ class IndexCategoriaView(APIView):
             categorias = categorias.filter(nombre__icontains=search_query)
 
         # Configurar paginación
-        paginator = PageNumberPagination()
+        paginator = CustomPagination()
         paginated_categorias = paginator.paginate_queryset(categorias, request)
 
         # Serializar los resultados paginados
         serializer = ConfigCategoriaSerializer(paginated_categorias, many=True)
 
+        # Devolver la respuesta paginada usando `get_paginated_response()`
         return paginator.get_paginated_response(serializer.data)
 
 class DeleteCategoriaView(APIView):
@@ -226,7 +242,7 @@ class IndexMarcaView(APIView):
         if search_query:
             marcas = marcas.filter(nombre__icontains=search_query)
 
-        paginator = PageNumberPagination()
+        paginator = CustomPagination()
         paginated_marcas = paginator.paginate_queryset(marcas, request)
 
         serializer = ConfigMarcaSerializer(paginated_marcas, many=True)
@@ -340,7 +356,7 @@ class IndexAlmacenView(APIView):
         if search_query:
             almacenes = almacenes.filter(nombre__icontains=search_query)
 
-        paginator = PageNumberPagination()
+        paginator = CustomPagination()
         paginated_almacenes = paginator.paginate_queryset(almacenes, request)
 
         serializer = ConfigAlmacenSerializer(paginated_almacenes, many=True)
@@ -454,7 +470,7 @@ class IndexPresentacionProductoView(APIView):
         if search_query:
             presentaciones = presentaciones.filter(nombre__icontains=search_query)
 
-        paginator = PageNumberPagination()
+        paginator = CustomPagination()
         paginated_presentaciones = paginator.paginate_queryset(presentaciones, request)
 
         serializer = ConfigPresentacionProductoSerializer(paginated_presentaciones, many=True)
@@ -567,7 +583,7 @@ class IndexUnidadMedidaView(APIView):
         if search_query:
             unidades = unidades.filter(nombre__icontains=search_query)
 
-        paginator = PageNumberPagination()
+        paginator = CustomPagination()
         paginated_unidades = paginator.paginate_queryset(unidades, request)
 
         serializer = ConfigUnidadMedidaSerializer(paginated_unidades, many=True)
@@ -681,7 +697,7 @@ class IndexProveedorView(APIView):
         if search_query:
             proveedores = proveedores.filter(nombre_proveedor__icontains=search_query)
 
-        paginator = PageNumberPagination()
+        paginator = CustomPagination()
         paginated_proveedores = paginator.paginate_queryset(proveedores, request)
 
         serializer = ConfigProveedorSerializer(paginated_proveedores, many=True)
