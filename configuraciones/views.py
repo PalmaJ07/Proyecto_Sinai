@@ -33,7 +33,8 @@ class CustomPagination(PageNumberPagination):
 class RegisterCategoria(APIView):
     def post(self, request):
         # Extraer el token JWT de la cookie
-        token = request.COOKIES.get('jwt')
+        #token = request.COOKIES.get('jwt')
+        token = request.headers.get('Authorization')
         if not token:
             raise AuthenticationFailed('Unauthenticated!')
 
@@ -65,7 +66,8 @@ class RegisterCategoria(APIView):
 class UpdateCategoria(APIView):
     def patch(self, request, encrypted_id):
         # Autenticación
-        token = request.COOKIES.get('jwt')
+        #token = request.COOKIES.get('jwt')
+        token = request.headers.get('Authorization')
         if not token:
             raise AuthenticationFailed('Unauthenticated!')
 
@@ -99,7 +101,8 @@ class IndexCategoriaView(APIView):
     # Método GET para listar las categorías con paginación
     def get(self, request):
         # Autenticación mediante JWT
-        token = request.COOKIES.get('jwt')
+        #token = request.COOKIES.get('jwt')
+        token = request.headers.get('Authorization')
         if not token:
             raise AuthenticationFailed('Unauthenticated!')
 
@@ -131,7 +134,8 @@ class IndexCategoriaView(APIView):
 class DeleteCategoriaView(APIView):
     def delete(self, request, encrypted_id):
         # Autenticación
-        token = request.COOKIES.get('jwt')
+        #token = request.COOKIES.get('jwt')
+        token = request.headers.get('Authorization')
         if not token:
             raise AuthenticationFailed('Unauthenticated!')
 
@@ -167,7 +171,8 @@ class DeleteCategoriaView(APIView):
 ################MARCAS###########################
 class RegisterMarca(APIView):
     def post(self, request):
-        token = request.COOKIES.get('jwt')
+        #token = request.COOKIES.get('jwt')
+        token = request.headers.get('Authorization')
         if not token:
             raise AuthenticationFailed('Unauthenticated!')
 
@@ -195,7 +200,8 @@ class RegisterMarca(APIView):
 
 class UpdateMarca(APIView):
     def patch(self, request, encrypted_id):
-        token = request.COOKIES.get('jwt')
+        #token = request.COOKIES.get('jwt')
+        token = request.headers.get('Authorization')
         if not token:
             raise AuthenticationFailed('Unauthenticated!')
         
@@ -225,7 +231,8 @@ class UpdateMarca(APIView):
 
 class IndexMarcaView(APIView):
     def get(self, request):
-        token = request.COOKIES.get('jwt')
+        #token = request.COOKIES.get('jwt')
+        token = request.headers.get('Authorization')
         if not token:
             raise AuthenticationFailed('Unauthenticated!')
 
@@ -252,7 +259,8 @@ class IndexMarcaView(APIView):
 
 class DeleteMarcaView(APIView):
     def delete(self, request, encrypted_id):
-        token = request.COOKIES.get('jwt')
+        #token = request.COOKIES.get('jwt')
+        token = request.headers.get('Authorization')
         if not token:
             raise AuthenticationFailed('Unauthenticated!')
 
@@ -282,7 +290,8 @@ class DeleteMarcaView(APIView):
 ################ALMACEN###########################
 class RegisterAlmacen(APIView):
     def post(self, request):
-        token = request.COOKIES.get('jwt')
+        #token = request.COOKIES.get('jwt')
+        token = request.headers.get('Authorization')
         if not token:
             raise AuthenticationFailed('Unauthenticated!')
 
@@ -310,7 +319,8 @@ class RegisterAlmacen(APIView):
 
 class UpdateAlmacen(APIView):
     def patch(self, request, encrypted_id):
-        token = request.COOKIES.get('jwt')
+        #token = request.COOKIES.get('jwt')
+        token = request.headers.get('Authorization')
         if not token:
             raise AuthenticationFailed('Unauthenticated!')
 
@@ -339,7 +349,8 @@ class UpdateAlmacen(APIView):
 
 class IndexAlmacenView(APIView):
     def get(self, request):
-        token = request.COOKIES.get('jwt')
+        #token = request.COOKIES.get('jwt')
+        token = request.headers.get('Authorization')
         if not token:
             raise AuthenticationFailed('Unauthenticated!')
 
@@ -365,7 +376,8 @@ class IndexAlmacenView(APIView):
 
 class DeleteAlmacenView(APIView):
     def delete(self, request, encrypted_id):
-        token = request.COOKIES.get('jwt')
+        #token = request.COOKIES.get('jwt')
+        token = request.headers.get('Authorization')
         if not token:
             raise AuthenticationFailed('Unauthenticated!')
 
@@ -396,7 +408,8 @@ class DeleteAlmacenView(APIView):
 
 class RegisterPresentacionProducto(APIView):
     def post(self, request):
-        token = request.COOKIES.get('jwt')
+        #token = request.COOKIES.get('jwt')
+        token = request.headers.get('Authorization')
         if not token:
             raise AuthenticationFailed('Unauthenticated!')
 
@@ -424,7 +437,8 @@ class RegisterPresentacionProducto(APIView):
 
 class UpdatePresentacionProducto(APIView):
     def patch(self, request, encrypted_id):
-        token = request.COOKIES.get('jwt')
+        #token = request.COOKIES.get('jwt')
+        token = request.headers.get('Authorization')
         if not token:
             raise AuthenticationFailed('Unauthenticated!')
 
@@ -453,7 +467,8 @@ class UpdatePresentacionProducto(APIView):
 
 class IndexPresentacionProductoView(APIView):
     def get(self, request):
-        token = request.COOKIES.get('jwt')
+        #token = request.COOKIES.get('jwt')
+        token = request.headers.get('Authorization')
         if not token:
             raise AuthenticationFailed('Unauthenticated!')
 
@@ -479,7 +494,8 @@ class IndexPresentacionProductoView(APIView):
 
 class DeletePresentacionProductoView(APIView):
     def delete(self, request, encrypted_id):
-        token = request.COOKIES.get('jwt')
+        #token = request.COOKIES.get('jwt')
+        token = request.headers.get('Authorization')
         if not token:
             raise AuthenticationFailed('Unauthenticated!')
 
@@ -509,7 +525,8 @@ class DeletePresentacionProductoView(APIView):
 ################UNIDAD DE MEDIDA###########################
 class RegisterUnidadMedida(APIView):
     def post(self, request):
-        token = request.COOKIES.get('jwt')
+        #token = request.COOKIES.get('jwt')
+        token = request.headers.get('Authorization')
         if not token:
             raise AuthenticationFailed('Unauthenticated!')
 
@@ -537,7 +554,8 @@ class RegisterUnidadMedida(APIView):
 
 class UpdateUnidadMedida(APIView):
     def patch(self, request, encrypted_id):
-        token = request.COOKIES.get('jwt')
+        #token = request.COOKIES.get('jwt')
+        token = request.headers.get('Authorization')
         if not token:
             raise AuthenticationFailed('Unauthenticated!')
 
@@ -566,7 +584,8 @@ class UpdateUnidadMedida(APIView):
 
 class IndexUnidadMedidaView(APIView):
     def get(self, request):
-        token = request.COOKIES.get('jwt')
+        #token = request.COOKIES.get('jwt')
+        token = request.headers.get('Authorization')
         if not token:
             raise AuthenticationFailed('Unauthenticated!')
 
@@ -592,7 +611,8 @@ class IndexUnidadMedidaView(APIView):
 
 class DeleteUnidadMedidaView(APIView):
     def delete(self, request, encrypted_id):
-        token = request.COOKIES.get('jwt')
+        #token = request.COOKIES.get('jwt')
+        token = request.headers.get('Authorization')
         if not token:
             raise AuthenticationFailed('Unauthenticated!')
 
@@ -623,7 +643,8 @@ class DeleteUnidadMedidaView(APIView):
 
 class RegisterProveedor(APIView):
     def post(self, request):
-        token = request.COOKIES.get('jwt')
+        #token = request.COOKIES.get('jwt')
+        token = request.headers.get('Authorization')
         if not token:
             raise AuthenticationFailed('Unauthenticated!')
 
@@ -651,7 +672,8 @@ class RegisterProveedor(APIView):
 
 class UpdateProveedor(APIView):
     def patch(self, request, encrypted_id):
-        token = request.COOKIES.get('jwt')
+        #token = request.COOKIES.get('jwt')
+        token = request.headers.get('Authorization')
         if not token:
             raise AuthenticationFailed('Unauthenticated!')
 
@@ -680,7 +702,8 @@ class UpdateProveedor(APIView):
 
 class IndexProveedorView(APIView):
     def get(self, request):
-        token = request.COOKIES.get('jwt')
+        #token = request.COOKIES.get('jwt')
+        token = request.headers.get('Authorization')
         if not token:
             raise AuthenticationFailed('Unauthenticated!')
 
@@ -706,7 +729,8 @@ class IndexProveedorView(APIView):
 
 class DeleteProveedorView(APIView):
     def delete(self, request, encrypted_id):
-        token = request.COOKIES.get('jwt')
+        #token = request.COOKIES.get('jwt')
+        token = request.headers.get('Authorization')
         if not token:
             raise AuthenticationFailed('Unauthenticated!')
 
