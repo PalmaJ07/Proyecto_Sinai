@@ -3,8 +3,8 @@ from django.utils import timezone
 
 # Create your models here.
 class ConfigCategoria(models.Model):
-    nombre = models.CharField(max_length=255)
-    abreviatura = models.CharField(max_length=50)
+    nombre = models.CharField(max_length=255, unique=True)
+    abreviatura = models.CharField(max_length=50, unique=True)
     orden = models.IntegerField()
 
     # Columnas adicionales
@@ -28,8 +28,8 @@ class ConfigCategoria(models.Model):
 # Aplicar lo mismo para otros modelos:
 
 class ConfigMarca(models.Model):
-    nombre = models.CharField(max_length=255)
-    abreviatura = models.CharField(max_length=50)
+    nombre = models.CharField(max_length=255, unique=True)
+    abreviatura = models.CharField(max_length=50, unique=True)
     orden = models.IntegerField()
 
     # Columnas adicionales
@@ -52,8 +52,8 @@ class ConfigMarca(models.Model):
 # Similar para los demás modelos (Almacen, PresentacionProducto, UnidadMedida, Proveedor):
 
 class ConfigAlmacen(models.Model):
-    nombre = models.CharField(max_length=255)
-    abreviatura = models.CharField(max_length=50)
+    nombre = models.CharField(max_length=255, unique=True)
+    abreviatura = models.CharField(max_length=50, unique=True)
     orden = models.IntegerField()
 
     # Columnas adicionales
@@ -76,8 +76,8 @@ class ConfigAlmacen(models.Model):
 # ConfigPresentacionProducto:
 
 class ConfigPresentacionProducto(models.Model):
-    nombre = models.CharField(max_length=255)
-    abreviatura = models.CharField(max_length=50)
+    nombre = models.CharField(max_length=255, unique=True)
+    abreviatura = models.CharField(max_length=50, unique=True)
     orden = models.IntegerField()
 
     # Columnas adicionales
@@ -98,8 +98,8 @@ class ConfigPresentacionProducto(models.Model):
 
 
 class ConfigUnidadMedida(models.Model):
-    nombre = models.CharField(max_length=255)
-    abreviatura = models.CharField(max_length=50)
+    nombre = models.CharField(max_length=255, unique=True)
+    abreviatura = models.CharField(max_length=50, unique=True)
     orden = models.IntegerField()
 
     # Columnas adicionales
@@ -122,7 +122,7 @@ class ConfigUnidadMedida(models.Model):
 
 # Modelo para la tabla con atributos específicos de proveedor
 class ConfigProveedor(models.Model):
-    nombre_proveedor = models.CharField(max_length=255)
+    nombre_proveedor = models.CharField(max_length=255, unique=True)
     telefono = models.CharField(max_length=50)
     encargado = models.CharField(max_length=50)
     telefono_encargado = models.CharField(max_length=50)
