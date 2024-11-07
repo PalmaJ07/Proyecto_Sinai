@@ -114,7 +114,7 @@ class IndexCategoriaView(APIView):
             raise AuthenticationFailed('Invalid token!')
 
         # Obtener todas las categorías
-        categorias = ConfigCategoria.objects.all()
+        categorias = ConfigCategoria.objects.filter(deleted_user__isnull=True)
 
         # Filtro de búsqueda (opcional)
         search_query = request.GET.get('search')
@@ -243,7 +243,7 @@ class IndexMarcaView(APIView):
         except jwt.DecodeError:
             raise AuthenticationFailed('Invalid token!')
 
-        marcas = ConfigMarca.objects.all()
+        marcas = ConfigMarca.objects.filter(deleted_user__isnull=True)
 
         search_query = request.GET.get('search')
         if search_query:
@@ -361,7 +361,7 @@ class IndexAlmacenView(APIView):
         except jwt.DecodeError:
             raise AuthenticationFailed('Invalid token!')
 
-        almacenes = ConfigAlmacen.objects.all()
+        almacenes = ConfigAlmacen.objects.filter(deleted_user__isnull=True)
 
         search_query = request.GET.get('search')
         if search_query:
@@ -479,7 +479,7 @@ class IndexPresentacionProductoView(APIView):
         except jwt.DecodeError:
             raise AuthenticationFailed('Invalid token!')
 
-        presentaciones = ConfigPresentacionProducto.objects.all()
+        presentaciones = ConfigPresentacionProducto.objects.filter(deleted_user__isnull=True)
 
         search_query = request.GET.get('search')
         if search_query:
@@ -596,7 +596,7 @@ class IndexUnidadMedidaView(APIView):
         except jwt.DecodeError:
             raise AuthenticationFailed('Invalid token!')
 
-        unidades = ConfigUnidadMedida.objects.all()
+        unidades = ConfigUnidadMedida.objects.filter(deleted_user__isnull=True)
 
         search_query = request.GET.get('search')
         if search_query:
@@ -714,7 +714,7 @@ class IndexProveedorView(APIView):
         except jwt.DecodeError:
             raise AuthenticationFailed('Invalid token!')
 
-        proveedores = ConfigProveedor.objects.all()
+        proveedores = ConfigProveedor.objects.filter(deleted_user__isnull=True)
 
         search_query = request.GET.get('search')
         if search_query:

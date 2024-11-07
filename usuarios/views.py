@@ -147,7 +147,7 @@ class IndexView(APIView):
             raise AuthenticationFailed('Invalid token!')
 
         # Obtener todos los usuarios
-        users = User.objects.all()
+        users = User.objects.filter(deleted_user__isnull=True)
 
         # Filtro por user_type (0 o 1)
         user_type = request.GET.get('user_type')
@@ -529,7 +529,7 @@ class IndexClientView(APIView):
             raise AuthenticationFailed('Invalid token!')
 
         # Obtener todos los usuarios
-        clientes = Cliente.objects.all()
+        clientes = Cliente.objects.filter(deleted_user__isnull=True)
 
         # Filtro por búsqueda parcial (nombre, telefono, id_personal)
         search_query = request.GET.get('search')
