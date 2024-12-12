@@ -55,6 +55,17 @@ PATCH http://127.0.0.1:8000/api/user/empleado/update/Mw==/
 }
 nota: Aqui se psan todos los atributos, pero podria psar solo name y solo ese se cambiaria
 
+****Crear el usuario root****
+python manage.py shell
 
-************Pruebas para agregar cliente************
+from usuarios.models import User, User_Type
 
+user_type = User_Type.objects.create()
+user = User.objects.create_user(
+    username='root',
+    password='root',
+    user_type=user_type,
+    name='Administrador',
+    id_personal='1234567890',
+    phone='1234567890'
+)

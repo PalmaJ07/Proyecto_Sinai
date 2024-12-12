@@ -79,19 +79,19 @@ WSGI_APPLICATION = 'app_backend_api.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
-'''
+
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.mysql",
         "NAME": "bd_sinai",
-        "USER": "admin",
-        "PASSWORD": "password",
-        "HOST": "localhost",
+        "USER": "root",
+        "PASSWORD": "",
+        "HOST": "172.21.32.1",
         "PORT": "3306",
     }
 }
-'''
 
+'''
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.mysql",
@@ -102,7 +102,7 @@ DATABASES = {
         "PORT": "3306",
     }
 }
-
+'''
 
 # Password validation
 # https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
