@@ -79,7 +79,7 @@ WSGI_APPLICATION = 'app_backend_api.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
-
+'''
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.mysql",
@@ -90,19 +90,19 @@ DATABASES = {
         "PORT": "3306",
     }
 }
-
 '''
+
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.mysql",
-        "NAME": "bd_sinai",
+        "NAME": "bdsinai",
         "USER": "root",
-        "PASSWORD": "root3234!",
-        "HOST": "ls-ecfe9046383887e06491ace40fa7882744fc61bf.ctu28y8skvfr.us-east-2.rds.amazonaws.com",
+        "PASSWORD": "LI0Kb(UlK=&4V^U,%?>)h)!#%vrGVpVM",
+        "HOST": "ls-6ddd2c089a2ce72dac8d9bc09e615ecf57ad38f7.cx6o004wkg7p.us-east-1.rds.amazonaws.com",
         "PORT": "3306",
     }
 }
-'''
+
 
 # Password validation
 # https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
