@@ -61,7 +61,7 @@ class ProductoDevolucionSerializer(serializers.ModelSerializer):
     class Meta:
         model = ProductoDevolucion
         fields = ['encrypted_id', 'producto_detalle', 'cantidad_por_presentacion', 
-                  'unidades_por_presentacion', 'fecha', 'fecha_expiracion', 
+                  'unidades_por_presentacion', 'fecha_ingreso', 'fecha_expiracion', 
                   'created_user', 'update_user', 'deleted_user', 'created_at', 'update_at', 'deleted_at']
 
     def get_encrypted_id(self, obj):
@@ -81,3 +81,4 @@ class ProductoMovimientoSerializer(serializers.ModelSerializer):
 
     def get_encrypted_id(self, obj):
         return base64.urlsafe_b64encode(str(obj.id).encode()).decode()
+

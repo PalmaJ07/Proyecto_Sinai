@@ -402,3 +402,202 @@ class ProductoDetalleIngresoCreate(APIView):
         )
 
         return Response({'message': message}, status=status.HTTP_201_CREATED)
+    
+class IndexProductoDetalleIngresoView(APIView):
+    def get(self, request):
+        token = request.headers.get('Authorization')
+        if not token:
+            raise AuthenticationFailed('Unauthenticated!')
+
+        try:
+            payload = jwt.decode(token, 'secret', algorithms=['HS256'])
+        except jwt.ExpiredSignatureError:
+            raise AuthenticationFailed('Unauthenticated!')
+        except jwt.DecodeError:
+            raise AuthenticationFailed('Invalid token!')
+
+        detalles_ingreso = ProductoDetalleIngreso.objects.filter(deleted_user__isnull=True)
+
+        # Filtro de búsqueda por fecha de ingreso
+        search_query = request.GET.get('search')
+        if search_query:
+            detalles_ingreso = detalles_ingreso.filter(fecha_ingreso__icontains=search_query)
+
+        # Paginación
+        paginator = CustomPagination()
+        paginated_detalles = paginator.paginate_queryset(detalles_ingreso, request)
+        
+        serializer = ProductoDetalleIngresoSerializer(paginated_detalles, many=True)
+
+        return paginator.get_paginated_response(serializer.data)
+
+class UpdateProductoDetalleIngresoView(APIView):
+    def patch(self, request, encrypted_id):
+        token = request.headers.get('Authorization')
+        if not token:
+            raise AuthenticationFailed('Unauthenticated!')
+
+        try:
+            payload = jwt.decode(token, 'secret', algorithms=['HS256'])
+        except jwt.ExpiredSignatureError:
+            raise AuthenticationFailed('Unauthenticated!')
+        except jwt.DecodeError:
+            raise AuthenticationFailed('Invalid token!')
+
+        try:
+            producto_ingreso_id = base64.urlsafe_b64decode(encrypted_id).decode()
+        except Exception:
+            return Response({'error': 'Invalid encrypted ID.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            producto_ingreso = ProductoDetalleIngreso.objects.get(id=producto_ingreso_id)
+        except ProductoDetalleIngreso.DoesNotExist:
+            return Response({'error': 'ProductoDetalleIngreso not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+        # Actualizar ProductoDetalleIngreso
+        serializer = ProductoDetalleIngresoSerializer(producto_ingreso, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        # Ajustar ProductoDetalle según los cambios
+        producto_detalle = producto_ingreso.producto_detalle
+        previous_data = {
+            'cantidad_por_presentacion': producto_ingreso.cantidad_por_presentacion,
+            'unidades_por_presentacion': producto_ingreso.unidades_por_presentacion,
+        }
+        updated_data = request.data
+        diff_cantidad = int(updated_data.get('cantidad_por_presentacion', previous_data['cantidad_por_presentacion'])) - previous_data['cantidad_por_presentacion']
+        diff_unidades = int(updated_data.get('unidades_por_presentacion', previous_data['unidades_por_presentacion'])) - previous_data['unidades_por_presentacion']
+
+        producto_detalle.cantidad_por_presentacion += diff_cantidad
+        producto_detalle.total_unidades += diff_unidades
+        producto_detalle.save()
+
+        return Response({'message': 'ProductoDetalleIngreso and ProductoDetalle updated successfully.'}, status=status.HTTP_200_OK)
+
+
+class DeleteProductoDetalleIngresoView(APIView):
+    def delete(self, request, encrypted_id):
+        token = request.headers.get('Authorization')
+        if not token:
+            raise AuthenticationFailed('Unauthenticated!')
+
+        try:
+            payload = jwt.decode(token, 'secret', algorithms=['HS256'])
+        except jwt.ExpiredSignatureError:
+            raise AuthenticationFailed('Unauthenticated!')
+        except jwt.DecodeError:
+            raise AuthenticationFailed('Invalid token!')
+
+        try:
+            producto_ingreso_id = base64.urlsafe_b64decode(encrypted_id).decode()
+        except Exception:
+            return Response({'error': 'Invalid encrypted ID.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            producto_ingreso = ProductoDetalleIngreso.objects.get(id=producto_ingreso_id)
+        except ProductoDetalleIngreso.DoesNotExist:
+            return Response({'error': 'ProductoDetalleIngreso not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+        # Revertir las cantidades en ProductoDetalle
+        producto_detalle = producto_ingreso.producto_detalle
+        producto_detalle.cantidad_por_presentacion -= producto_ingreso.cantidad_por_presentacion
+        producto_detalle.total_unidades -= producto_ingreso.unidades_por_presentacion
+        producto_detalle.save()
+
+        # Marcar ProductoDetalleIngreso como eliminado
+        producto_ingreso.deleted_user = User.objects.get(id=payload['id'])
+        producto_ingreso.deleted_at = timezone.now()
+        producto_ingreso.save()
+
+        return Response({'message': 'ProductoDetalleIngreso marked as deleted successfully.'}, status=status.HTTP_200_OK)
+
+########################PRODUCTO-MOVIMIENTO########################
+
+class ProductoMovimientoCreate(APIView):
+    def post(self, request):
+        token = request.headers.get('Authorization')
+        if not token:
+            return Response({'error': 'Token no proporcionado'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            payload = jwt.decode(token, 'secret', algorithms=['HS256'])
+        except jwt.ExpiredSignatureError:
+            return Response({'error': 'Token expirado'}, status=status.HTTP_401_UNAUTHORIZED)
+        except jwt.DecodeError:
+            return Response({'error': 'Token inválido'}, status=status.HTTP_401_UNAUTHORIZED)
+
+        current_user = User.objects.get(id=payload['id'])
+        data = request.data
+
+        # Obtener producto_detalle_origen
+        try:
+            producto_detalle_origen = ProductoDetalle.objects.get(id=data['producto_detalle'])
+        except ProductoDetalle.DoesNotExist:
+            return Response({'error': 'ProductoDetalle no encontrado para el id proporcionado'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Verificar cantidades disponibles en el origen
+        if producto_detalle_origen.total_unidades < int(data['unidades_por_presentacion']):
+            return Response({'error': 'Cantidad insuficiente en el almacén de origen'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Obtener o crear producto_detalle_destino
+        producto_detalle_destino, creado = ProductoDetalle.objects.get_or_create(
+            producto_id=data['producto'],
+            almacen_id=data['config_almacen'],
+            fecha_expiracion=data.get('fecha_expiracion'),
+            defaults={
+                'config_unidad_medida_id': producto_detalle_origen.config_unidad_medida_id,
+                'peso': producto_detalle_origen.peso,
+                'config_presentacion_producto_id': producto_detalle_origen.config_presentacion_producto_id,
+                'cantidad_por_presentacion': 0,
+                'unidades_por_presentacion': 0,
+                'total_unidades': 0,
+                'precio_venta_presentacion': producto_detalle_origen.precio_venta_presentacion,
+                'precio_venta_unidades': producto_detalle_origen.precio_venta_unidades,
+                'proveedor_id': producto_detalle_origen.proveedor_id,
+                'created_user': current_user
+            }
+        )
+
+        # Actualizar producto_detalle_origen
+        producto_detalle_origen.cantidad_por_presentacion -= int(data['cantidad_por_presentacion'])
+        producto_detalle_origen.unidades_por_presentacion -= int(data['unidades_por_presentacion'])
+        producto_detalle_origen.total_unidades -= int(data['unidades_por_presentacion'])
+        producto_detalle_origen.update_user = current_user
+        producto_detalle_origen.save()
+
+        # Actualizar producto_detalle_destino
+        producto_detalle_destino.cantidad_por_presentacion += int(data['cantidad_por_presentacion'])
+        producto_detalle_destino.unidades_por_presentacion += int(data['unidades_por_presentacion'])
+        producto_detalle_destino.total_unidades += int(data['unidades_por_presentacion'])
+        producto_detalle_destino.update_user = current_user
+        producto_detalle_destino.save()
+
+        # Registrar movimiento
+        movimiento = ProductoMovimiento.objects.create(
+            producto_detalle_origen=producto_detalle_origen.almacen,
+            producto_detalle_destino=producto_detalle_destino.almacen,
+            cantidad_por_presentacion=int(data['cantidad_por_presentacion']),
+            unidades_por_presentacion=int(data['unidades_por_presentacion']),
+            fecha=data['fecha_ingreso'],
+            fecha_expiracion=data.get('fecha_expiracion'),
+            created_user=current_user
+        )
+
+        # Registrar ingreso en producto_detalle_destino
+        ProductoDetalleIngreso.objects.create(
+            producto_id=data['producto'],
+            producto_detalle_id=producto_detalle_destino.id,
+            config_almacen_id=data['config_almacen'],
+            producto_movimiento_id=movimiento.id,  # Asociar el ID del movimiento creado
+            user=current_user,
+            cantidad_por_presentacion=int(data['cantidad_por_presentacion']),
+            unidades_por_presentacion=int(data['unidades_por_presentacion']),
+            precio_compra_presentacion=float(data['precio_compra_presentacion']),
+            precio_compra_unidades=float(data['precio_compra_unidades']),
+            fecha_expiracion=data.get('fecha_expiracion'),
+            fecha_ingreso=data['fecha_ingreso'],
+            created_user=current_user
+        )
+
+        return Response({'message': 'ProductoDetalle actualizado y movimiento registrado con éxito.'}, status=status.HTTP_201_CREATED)
