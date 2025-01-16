@@ -31,10 +31,10 @@ class ProductoDetalle(models.Model):
     config_unidad_medida = models.ForeignKey(ConfigUnidadMedida, on_delete=models.PROTECT, related_name='producto_detalles')
     peso = models.FloatField()
     config_presentacion_producto = models.ForeignKey(ConfigPresentacionProducto, on_delete=models.PROTECT, related_name='producto_detalles')
-    cantidad_por_presentacion = models.IntegerField()
-    unidades_por_presentacion = models.IntegerField()
-    total_unidades = models.IntegerField()
-    almacen = models.ForeignKey(ConfigAlmacen, on_delete=models.PROTECT, related_name='producto_detalles')
+    cantidad_por_presentacion = models.IntegerField(null=True, blank=True)
+    unidades_por_presentacion = models.IntegerField(null=True, blank=True)
+    total_unidades = models.IntegerField(null=True, blank=True)
+    almacen = models.ForeignKey(ConfigAlmacen, on_delete=models.PROTECT, related_name='producto_detalles', null=True, blank=True)
     precio_venta_presentacion = models.DecimalField(max_digits=10, decimal_places=2)
     precio_venta_unidades = models.DecimalField(max_digits=10, decimal_places=2)
     proveedor = models.ForeignKey(ConfigProveedor, on_delete=models.PROTECT, related_name='producto_detalles')
@@ -53,7 +53,7 @@ class ProductoDetalle(models.Model):
         return f"Detalle de {self.producto} - {self.config_presentacion_producto}"
 
     class Meta:
-        verbose_name = "Producto Detalle"
+        verbose_name = "Producto Detalle"                          
         verbose_name_plural = "Productos Detalles"
         ordering = ['producto', 'config_presentacion_producto']
 

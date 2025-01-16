@@ -36,7 +36,7 @@ class LoginView(APIView):
         # Crear el payload para el token JWT
         payload = {
             'id': user.id,
-            'exp': datetime.datetime.utcnow() + datetime.timedelta(minutes=60),
+            'exp': datetime.datetime.utcnow() + datetime.timedelta(minutes=240),
             'iat': datetime.datetime.utcnow()
         }
 

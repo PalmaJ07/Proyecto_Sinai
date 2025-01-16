@@ -25,7 +25,10 @@ urlpatterns = [
     path('productoIngreso/index/', IndexProductoDetalleIngresoView.as_view(), name='index'),
     path('productoIngreso/delete/<str:encrypted_id>/', DeleteProductoDetalleIngresoView.as_view(), name='deleteProducto'),
 
-    #Apis de productoMovimiento
+    #Api de productoMovimiento
     path('movimientoproducto/create/', ProductoMovimientoCreate.as_view(), name='create-producto-movimiento'),
+
+    #Api de productoDevolucion
+    path('devolucionProducto/create/', RegisterProductoDevolucion.as_view(), name='create-producto-devolucion'),
 ]
 

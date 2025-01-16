@@ -340,52 +340,68 @@ class ProductoDetalleIngresoCreate(APIView):
         # Obtener los datos del request
         data = request.data
 
-        # Verificar si existe un ProductoDetalle con la misma fecha de expiración y almacen
-        producto_detalle_existente = ProductoDetalle.objects.filter(
+        # Buscar un ProductoDetalle con todos los valores NULL
+        producto_detalle_vacio = ProductoDetalle.objects.filter(
             producto_id=data['producto'],
-            almacen_id=data['config_almacen'],
-            fecha_expiracion=data.get('fecha_expiracion')
+            cantidad_por_presentacion__isnull=True,
+            total_unidades__isnull=True,
+            almacen__isnull=True,
+            deleted_at__isnull=True,
+            fecha_expiracion__isnull=True
         ).first()
 
-        if producto_detalle_existente:
-            # Si existe, sumar las cantidades
-            producto_detalle_existente.cantidad_por_presentacion += int(data['cantidad_por_presentacion'])
-            producto_detalle_existente.unidades_por_presentacion += int(data['unidades_por_presentacion'])
-            producto_detalle_existente.total_unidades += int(data['unidades_por_presentacion'])  # O la cantidad correspondiente
-            producto_detalle_existente.update_user = current_user
-            producto_detalle_existente.save()
-
-            # Usar el ID del ProductoDetalle existente
-            producto_detalle_id = producto_detalle_existente.id
-            message = "ProductoDetalle actualizado con las nuevas cantidades."
+        if producto_detalle_vacio and not producto_detalle_vacio.almacen and not producto_detalle_vacio.fecha_expiracion:
+            # Actualizar los campos vacíos
+            producto_detalle_vacio.cantidad_por_presentacion = int(data['cantidad_por_presentacion'])
+            producto_detalle_vacio.total_unidades = int(data['unidades_por_presentacion'])
+            producto_detalle_vacio.almacen_id = data['config_almacen']
+            producto_detalle_vacio.fecha_expiracion = data['fecha_expiracion']
+            producto_detalle_vacio.update_user = current_user
+            producto_detalle_vacio.save()
+            producto_detalle_id = producto_detalle_vacio.id
+            message = "ProductoDetalle con valores nulos actualizado."
         else:
-            # Si no existe, obtener los datos del ProductoDetalle base (del mismo producto)
-            producto_detalle_base = ProductoDetalle.objects.filter(producto_id=data['producto']).first()
+            # Verificar si existe un ProductoDetalle con la misma fecha de expiración y almacen
+            producto_detalle_existente = ProductoDetalle.objects.filter(
+                producto_id=data['producto'],
+                almacen_id=data['config_almacen'],
+                fecha_expiracion=data.get('fecha_expiracion'),
+                deleted_at__isnull=True
+            ).first()
 
-            if producto_detalle_base:
-                # Crear un nuevo ProductoDetalle con los datos base, pero con la nueva fecha de expiración o almacén
-                nuevo_producto_detalle = ProductoDetalle.objects.create(
-                    producto_id=data['producto'],
-                    config_unidad_medida_id=producto_detalle_base.config_unidad_medida.id,
-                    peso=producto_detalle_base.peso,
-                    config_presentacion_producto_id=producto_detalle_base.config_presentacion_producto.id,
-                    cantidad_por_presentacion=int(data['cantidad_por_presentacion']),
-                    unidades_por_presentacion=int(data['unidades_por_presentacion']),
-                    total_unidades=int(data['unidades_por_presentacion']),  # Total inicial igual a las unidades por presentación
-                    almacen_id=data['config_almacen'],
-                    precio_venta_presentacion=producto_detalle_base.precio_venta_presentacion,
-                    precio_venta_unidades=producto_detalle_base.precio_venta_unidades,
-                    proveedor_id=producto_detalle_base.proveedor.id,
-                    fecha_expiracion=data['fecha_expiracion'],
-                    created_user=current_user
-                )
-
-                producto_detalle_id = nuevo_producto_detalle.id
-                message = "Nuevo ProductoDetalle creado."
+            if producto_detalle_existente:
+                # Si existe, sumar las cantidades
+                producto_detalle_existente.cantidad_por_presentacion += int(data['cantidad_por_presentacion'])
+                producto_detalle_existente.total_unidades += int(data['unidades_por_presentacion'])
+                producto_detalle_existente.update_user = current_user
+                producto_detalle_existente.save()
+                producto_detalle_id = producto_detalle_existente.id
+                message = "ProductoDetalle actualizado con las nuevas cantidades."
             else:
-                return Response({'error': 'ProductoDetalle base no encontrado para el producto'}, status=status.HTTP_400_BAD_REQUEST)
+                # Crear un nuevo ProductoDetalle
+                producto_detalle_base = ProductoDetalle.objects.filter(producto_id=data['producto']).first()
+                if producto_detalle_base:
+                    nuevo_producto_detalle = ProductoDetalle.objects.create(
+                        producto_id=data['producto'],
+                        config_unidad_medida_id=producto_detalle_base.config_unidad_medida.id,
+                        peso=producto_detalle_base.peso,
+                        config_presentacion_producto_id=producto_detalle_base.config_presentacion_producto.id,
+                        cantidad_por_presentacion=int(data['cantidad_por_presentacion']),
+                        unidades_por_presentacion=producto_detalle_base.unidades_por_presentacion,
+                        total_unidades=int(data['unidades_por_presentacion']),
+                        almacen_id=data['config_almacen'],
+                        precio_venta_presentacion=producto_detalle_base.precio_venta_presentacion,
+                        precio_venta_unidades=producto_detalle_base.precio_venta_unidades,
+                        proveedor_id=producto_detalle_base.proveedor.id,
+                        fecha_expiracion=data['fecha_expiracion'],
+                        created_user=current_user
+                    )
+                    producto_detalle_id = nuevo_producto_detalle.id
+                    message = "Nuevo ProductoDetalle creado."
+                else:
+                    return Response({'error': 'ProductoDetalle base no encontrado para el producto'}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Crear el ProductoDetalleIngreso con los valores del request
+        # Crear el ProductoDetalleIngreso
         ProductoDetalleIngreso.objects.create(
             producto_id=data['producto'],
             producto_detalle_id=producto_detalle_id,
@@ -402,6 +418,7 @@ class ProductoDetalleIngresoCreate(APIView):
         )
 
         return Response({'message': message}, status=status.HTTP_201_CREATED)
+
     
 class IndexProductoDetalleIngresoView(APIView):
     def get(self, request):
@@ -536,42 +553,56 @@ class ProductoMovimientoCreate(APIView):
         except ProductoDetalle.DoesNotExist:
             return Response({'error': 'ProductoDetalle no encontrado para el id proporcionado'}, status=status.HTTP_400_BAD_REQUEST)
 
+        if producto_detalle_origen.cantidad_por_presentacion < int(data['unidades_por_presentacion']):
+            return Response({'error': 'Cantidad insuficiente en el almacén de origen'}, status=status.HTTP_400_BAD_REQUEST)
+        
         # Verificar cantidades disponibles en el origen
         if producto_detalle_origen.total_unidades < int(data['unidades_por_presentacion']):
             return Response({'error': 'Cantidad insuficiente en el almacén de origen'}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Obtener o crear producto_detalle_destino
-        producto_detalle_destino, creado = ProductoDetalle.objects.get_or_create(
+        # Obtener producto_detalle_destino o crearlo si no existe
+        producto_detalle_destino = ProductoDetalle.objects.filter(
             producto_id=data['producto'],
             almacen_id=data['config_almacen'],
             fecha_expiracion=data.get('fecha_expiracion'),
-            defaults={
-                'config_unidad_medida_id': producto_detalle_origen.config_unidad_medida_id,
-                'peso': producto_detalle_origen.peso,
-                'config_presentacion_producto_id': producto_detalle_origen.config_presentacion_producto_id,
-                'cantidad_por_presentacion': 0,
-                'unidades_por_presentacion': 0,
-                'total_unidades': 0,
-                'precio_venta_presentacion': producto_detalle_origen.precio_venta_presentacion,
-                'precio_venta_unidades': producto_detalle_origen.precio_venta_unidades,
-                'proveedor_id': producto_detalle_origen.proveedor_id,
-                'created_user': current_user
-            }
-        )
+            deleted_at__isnull=True
+        ).first()
 
-        # Actualizar producto_detalle_origen
-        producto_detalle_origen.cantidad_por_presentacion -= int(data['cantidad_por_presentacion'])
-        producto_detalle_origen.unidades_por_presentacion -= int(data['unidades_por_presentacion'])
-        producto_detalle_origen.total_unidades -= int(data['unidades_por_presentacion'])
-        producto_detalle_origen.update_user = current_user
-        producto_detalle_origen.save()
+        if producto_detalle_destino is None:
+            # Si no existe, crear un nuevo ProductoDetalle
+            producto_detalle_destino = ProductoDetalle.objects.create(
+                producto_id=data['producto'],
+                almacen_id=data['config_almacen'],
+                fecha_expiracion=data.get('fecha_expiracion'),
+                config_unidad_medida_id=producto_detalle_origen.config_unidad_medida_id,
+                peso=producto_detalle_origen.peso,
+                config_presentacion_producto_id=producto_detalle_origen.config_presentacion_producto_id,
+                cantidad_por_presentacion=data.get('cantidad_por_presentacion'),
+                unidades_por_presentacion=producto_detalle_origen.unidades_por_presentacion,
+                total_unidades=data.get('unidades_por_presentacion'),
+                precio_venta_presentacion=producto_detalle_origen.precio_venta_presentacion,
+                precio_venta_unidades=producto_detalle_origen.precio_venta_unidades,
+                proveedor_id=producto_detalle_origen.proveedor_id,
+                created_user=current_user
+            )
 
-        # Actualizar producto_detalle_destino
-        producto_detalle_destino.cantidad_por_presentacion += int(data['cantidad_por_presentacion'])
-        producto_detalle_destino.unidades_por_presentacion += int(data['unidades_por_presentacion'])
-        producto_detalle_destino.total_unidades += int(data['unidades_por_presentacion'])
-        producto_detalle_destino.update_user = current_user
-        producto_detalle_destino.save()
+            producto_detalle_origen.cantidad_por_presentacion -= int(data['cantidad_por_presentacion'])
+            producto_detalle_origen.total_unidades -= int(data['unidades_por_presentacion'])
+            producto_detalle_origen.update_user = current_user
+            producto_detalle_origen.save()
+
+        else:
+            # Si existe, actualizarlo
+            producto_detalle_destino.cantidad_por_presentacion += int(data['cantidad_por_presentacion'])
+            producto_detalle_destino.total_unidades += int(data['unidades_por_presentacion'])
+            producto_detalle_destino.update_user = current_user
+            producto_detalle_destino.save()
+
+            # Actualizar producto_detalle_origen
+            producto_detalle_origen.cantidad_por_presentacion -= int(data['cantidad_por_presentacion'])
+            producto_detalle_origen.total_unidades -= int(data['unidades_por_presentacion'])
+            producto_detalle_origen.update_user = current_user
+            producto_detalle_origen.save()
 
         # Registrar movimiento
         movimiento = ProductoMovimiento.objects.create(
@@ -601,3 +632,63 @@ class ProductoMovimientoCreate(APIView):
         )
 
         return Response({'message': 'ProductoDetalle actualizado y movimiento registrado con éxito.'}, status=status.HTTP_201_CREATED)
+
+
+########################PRODUCTO-DEVOLUCION########################
+class RegisterProductoDevolucion(APIView):
+    def post(self, request):
+        # Autenticación con JWT
+        token = request.headers.get('Authorization')
+        if not token:
+            raise AuthenticationFailed('Unauthenticated!')
+
+        try:
+            payload = jwt.decode(token, 'secret', algorithms=['HS256'])
+        except jwt.ExpiredSignatureError:
+            raise AuthenticationFailed('Unauthenticated!')
+        except jwt.DecodeError:
+            raise AuthenticationFailed('Invalid token!')
+
+        # Obtener el usuario actual
+        current_user = User.objects.filter(id=payload['id']).first()
+        if not current_user:
+            raise AuthenticationFailed('User not found!')
+
+        # Obtener datos de entrada
+        data = request.data.copy()
+        producto_detalle_id = int(data.get('producto_detalle'))
+        cantidad_por_presentacion = int(data.get('cantidad_por_presentacion', 0))
+        unidades_por_presentacion = int(data.get('unidades_por_presentacion', 0))
+
+        try:
+            # Buscar el registro ProductoDetalle
+            producto_detalle = ProductoDetalle.objects.get(id=producto_detalle_id)
+
+            # Validar disponibilidad antes de realizar cambios
+            if cantidad_por_presentacion > producto_detalle.cantidad_por_presentacion:
+                return Response({"error": "La cantidad por presentación excede el inventario disponible."}, status=status.HTTP_400_BAD_REQUEST)
+            if unidades_por_presentacion > producto_detalle.total_unidades:
+                return Response({"error": "Las unidades por presentación exceden las unidades disponibles."}, status=status.HTTP_400_BAD_REQUEST)
+
+            # Actualizar los valores en ProductoDetalle
+            producto_detalle.cantidad_por_presentacion -= cantidad_por_presentacion
+            producto_detalle.total_unidades -= unidades_por_presentacion
+            producto_detalle.update_user = current_user  # Usar la instancia de User
+            producto_detalle.save()
+
+            # Preparar datos para la creación de ProductoDevolucion
+            data['created_user'] = current_user.id
+            data['update_user'] = None
+            data['deleted_user'] = None
+
+            # Crear el registro de devolución
+            devolucion_serializer = ProductoDevolucionSerializer(data=data)
+            devolucion_serializer.is_valid(raise_exception=True)
+            devolucion_serializer.save()
+
+            return Response(devolucion_serializer.data, status=status.HTTP_201_CREATED)
+
+        except ProductoDetalle.DoesNotExist:
+            return Response({"error": "ProductoDetalle no encontrado."}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
