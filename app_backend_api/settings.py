@@ -96,7 +96,7 @@ DATABASES = {
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.mysql",
-        "NAME": "bdsinai",
+        "NAME": "dbsinai",
         "USER": "root",
         "PASSWORD": "LI0Kb(UlK=&4V^U,%?>)h)!#%vrGVpVM",
         "HOST": "ls-6ddd2c089a2ce72dac8d9bc09e615ecf57ad38f7.cx6o004wkg7p.us-east-1.rds.amazonaws.com",
