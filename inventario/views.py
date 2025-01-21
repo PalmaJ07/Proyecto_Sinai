@@ -264,10 +264,13 @@ class IndexProductoDetalleView(APIView):
         if almacen_id:
             producto_detalles = producto_detalles.filter(almacen_id=almacen_id)
 
-        # Filtro por proveedor
-        proveedor_id = request.GET.get('proveedor')
-        if proveedor_id:
-            producto_detalles = producto_detalles.filter(proveedor_id=proveedor_id)
+        #Filtro por producto
+        producto_id = request.GET.get('producto')
+        if producto_id:
+            producto_detalles = producto_detalles.filter(producto_id=producto_id)
+
+        
+
 
         # Filtro de búsqueda (opcional)
         search_query = request.GET.get('search')
