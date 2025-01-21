@@ -33,7 +33,7 @@ class ClienteSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Cliente
-        fields = ['encrypted_id', 'nombre', 'telefono', 'direccion', 'id_personal',
+        fields = ['encrypted_id','id', 'nombre', 'telefono', 'direccion', 'id_personal',
                    'created_user', 'update_user', 'deleted_user']
         
     # Método para encriptar el ID usando Base64
