@@ -9,6 +9,7 @@ from rest_framework.pagination import PageNumberPagination
 from .models import User, Cliente
 import jwt, datetime
 from django.utils import timezone
+from django.db.models import Case, When, Value, IntegerField
     
 #Controlador de login - api/login/
 
@@ -148,6 +149,15 @@ class IndexView(APIView):
 
         # Obtener todos los usuarios
         users = User.objects.filter(deleted_user__isnull=True)
+
+        # Anotar con una prioridad basada en el estado
+        users = users.annotate(
+            estado_priority=Case(
+                When(estado=0, then=Value(1)),
+                default=Value(0),
+                output_field=IntegerField()
+            )
+        ).order_by('estado_priority')
 
         # Filtro por user_type (0 o 1)
         user_type = request.GET.get('user_type')
@@ -290,6 +300,7 @@ class UpdateUserView(APIView):
         phone = request.data.get('phone')
         username = request.data.get('username')
         user_type = request.data.get('user_type')
+        almacen_asignado = request.data.get('almacen_asignado')
 
         # Actualizar solo los campos que se han pasado
         if name is not None:
@@ -302,6 +313,8 @@ class UpdateUserView(APIView):
             user.username = username
         if user_type is not None:
             user.user_type = user_type
+        if almacen_asignado is not None:
+            user.almacen_asignado = almacen_asignado
 
         # Guardar los cambios en la base de datos
         user.save()

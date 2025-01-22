@@ -4,6 +4,7 @@ from django.utils import timezone
 
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin, BaseUserManager
+from configuraciones.models import ConfigAlmacen
 
 class UserManager(BaseUserManager):
     def create_user(self, username, password=None, **extra_fields):
@@ -46,6 +47,8 @@ class User(AbstractBaseUser, PermissionsMixin):
     password = models.CharField(max_length=128)
     #Tipo de usuario
     user_type = models.ForeignKey('User_Type', on_delete=models.CASCADE)
+    #Almacen asignado
+    almacen_asignado = models.ForeignKey(ConfigAlmacen, on_delete=models.PROTECT, related_name='usuario_almacen', null=True, blank=True)
     
     estado = models.IntegerField(choices=[(1, 'Activo'), (0, 'Inactivo')], default=1)
 
