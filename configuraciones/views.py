@@ -1,5 +1,6 @@
-from django.shortcuts import render
+from django.shortcuts import render, get_object_or_404
 import base64
+from io import BytesIO
 from django.db.models import Q
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -10,7 +11,12 @@ from rest_framework.pagination import PageNumberPagination
 from .models import *
 from usuarios.models import  User
 import jwt, datetime
-from django.utils import timezone
+from inventario.models import ProductoDetalleIngreso, Producto, ConfigUnidadMedida, ProductoMovimiento, ProductoDetalle  # Ajusta según tus modelos
+from datetime import datetime
+from reportlab.pdfgen import canvas
+from reportlab.lib.pagesizes import letter
+from ventas.models import Venta, VentaDetalle
+from django.db.models import Sum, F
     
 # Create your views here.
 class CustomPagination(PageNumberPagination):
@@ -756,3 +762,91 @@ class DeleteProveedorView(APIView):
         proveedor.save()
 
         return Response({'message': 'Proveedor marked as deleted successfully.'}, status=status.HTTP_200_OK)
+
+#######Reportes#######
+
+##########Reportes de ventas##############
+class ReporteVentas(APIView):
+    def get(self, request):
+        # Obtener parámetros de fecha
+        fecha_inicio = request.GET.get('fecha_inicio', None)  # Fecha de inicio para el rango
+        fecha_fin = request.GET.get('fecha_fin', None)  # Fecha de fin para el rango
+        fecha = request.GET.get('fecha', None)  # Fecha única (si se pasa solo una)
+
+        # Filtrar las ventas por fecha
+        ventas = Venta.objects.all()
+
+        if fecha:
+            # Si solo se pasa una fecha, filtrar por esa fecha
+            ventas = ventas.filter(fecha_venta=fecha)
+        elif fecha_inicio and fecha_fin:
+            # Si se pasan ambas fechas, filtrar por el rango
+            ventas = ventas.filter(fecha_venta__gte=fecha_inicio, fecha_venta__lte=fecha_fin)
+        elif fecha_inicio:
+            # Si solo se pasa la fecha de inicio
+            ventas = ventas.filter(fecha_venta__gte=fecha_inicio)
+        elif fecha_fin:
+            # Si solo se pasa la fecha de fin
+            ventas = ventas.filter(fecha_venta__lte=fecha_fin)
+
+        # Calcular el total de ventas
+        total_ventas = ventas.aggregate(total=Sum('total_venta'))
+
+        # Si no hay ventas, devolver un mensaje apropiado
+        if total_ventas['total'] is None:
+            total_ventas['total'] = 0
+
+        # Devolver el reporte
+        return Response({
+            'total_ventas': total_ventas['total'],
+            'ventas': [{'id': venta.id, 'cliente': venta.cliente, 'total_venta': venta.total_venta, 'fecha_venta': venta.fecha_venta} for venta in ventas]
+        }, status=status.HTTP_200_OK)
+    
+##########Reportes de ventas##############
+
+class ReporteGanancias(APIView):
+    def get(self, request):
+        # Obtener parámetros de fecha
+        fecha_inicio = request.GET.get('fecha_inicio', None)  # Fecha de inicio para el rango
+        fecha_fin = request.GET.get('fecha_fin', None)  # Fecha de fin para el rango
+        fecha = request.GET.get('fecha', None)  # Fecha única (si se pasa solo una)
+
+        # Filtrar las ventas por fecha
+        ventas = Venta.objects.all()
+
+        if fecha:
+            # Si solo se pasa una fecha, filtrar por esa fecha
+            ventas = ventas.filter(fecha_venta=fecha)
+        elif fecha_inicio and fecha_fin:
+            # Si se pasan ambas fechas, filtrar por el rango
+            ventas = ventas.filter(fecha_venta__gte=fecha_inicio, fecha_venta__lte=fecha_fin)
+        elif fecha_inicio:
+            # Si solo se pasa la fecha de inicio
+            ventas = ventas.filter(fecha_venta__gte=fecha_inicio)
+        elif fecha_fin:
+            # Si solo se pasa la fecha de fin
+            ventas = ventas.filter(fecha_venta__lte=fecha_fin)
+
+        # Calcular el total de ventas
+        total_ventas = ventas.aggregate(total=Sum('total_venta'))
+
+        # Calcular el costo total de los productos vendidos
+        total_costos = VentaDetalle.objects.filter(venta__in=ventas).annotate(
+            costo_total=F('cantidad') * F('producto_detalle__costo')  # Cálculo del costo
+        ).aggregate(total_costos=Sum('costo_total'))
+
+        # Si no hay ventas o costos, establecer los valores como 0
+        total_ventas_value = total_ventas['total'] if total_ventas['total'] else 0
+        total_costos_value = total_costos['total_costos'] if total_costos['total_costos'] else 0
+
+        # Calcular las ganancias (ventas - costos)
+        ganancias = total_ventas_value - total_costos_value
+
+        # Devolver el reporte de ganancias
+        return Response({
+            'ganancias': ganancias,
+            'total_ventas': total_ventas_value,
+            'total_costos': total_costos_value,
+            'ventas': [{'id': venta.id, 'cliente': venta.cliente, 'total_venta': venta.total_venta, 'fecha_venta': venta.fecha_venta} for venta in ventas]
+        }, status=status.HTTP_200_OK)
+    

@@ -10,6 +10,7 @@ from .models import User, Cliente
 import jwt, datetime
 from django.utils import timezone
 from django.db.models import Case, When, Value, IntegerField
+from configuraciones.models import ConfigAlmacen
     
 #Controlador de login - api/login/
 
@@ -300,7 +301,7 @@ class UpdateUserView(APIView):
         phone = request.data.get('phone')
         username = request.data.get('username')
         user_type = request.data.get('user_type')
-        almacen_asignado = request.data.get('almacen_asignado')
+        almacen_asignado_id = request.data.get('almacen_asignado')
 
         # Actualizar solo los campos que se han pasado
         if name is not None:
@@ -313,8 +314,13 @@ class UpdateUserView(APIView):
             user.username = username
         if user_type is not None:
             user.user_type = user_type
-        if almacen_asignado is not None:
-            user.almacen_asignado = almacen_asignado
+        
+        if almacen_asignado_id is not None:
+            try:
+                almacen_asignado = ConfigAlmacen.objects.get(id=almacen_asignado_id)  # Obtén la instancia de ConfigAlmacen
+                user.almacen_asignado = almacen_asignado
+            except ConfigAlmacen.DoesNotExist:
+                return Response({'error': 'ConfigAlmacen not found.'}, status=status.HTTP_404_NOT_FOUND)
 
         # Guardar los cambios en la base de datos
         user.save()

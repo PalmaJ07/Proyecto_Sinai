@@ -69,3 +69,11 @@ user = User.objects.create_user(
     id_personal='1234567890',
     phone='1234567890'
 )
+
+ventas 
+GET /api/reporte/ventas/?fecha=2025-01-15
+GET /api/reporte/ventas/?fecha_inicio=2025-01-01&fecha_fin=2025-01-31
+
+ganancias
+GET /api/reporte/ganancias/?fecha=2025-01-15
+GET /api/reporte/ganancias/?fecha_inicio=2025-01-01&fecha_fin=2025-01-31

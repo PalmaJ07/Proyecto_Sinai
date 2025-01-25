@@ -348,7 +348,6 @@ class ProductoDetalleIngresoCreate(APIView):
             producto_id=data['producto'],
             cantidad_por_presentacion__isnull=True,
             total_unidades__isnull=True,
-            almacen__isnull=True,
             deleted_at__isnull=True,
             fecha_expiracion__isnull=True
         ).first()
