@@ -214,14 +214,15 @@ class UserView(APIView):
         # Verifica que el usuario existe
         if not user:
             raise AuthenticationFailed('User not found!')
-
+          
         # Preparar la respuesta con la información requerida
         response_data = {
             'nombre': user.name,
             'username': user.username,
             'telefono': user.phone,
             'id_personal': user.id_personal,
-            'user_type': user.user_type.description  # Obtener la descripción del tipo de usuario
+            'user_type': user.user_type.description,  # Obtener la descripción del tipo de usuario
+            'almacen_asignado': user.almacen_asignado_id
         }
 
         return Response(response_data)

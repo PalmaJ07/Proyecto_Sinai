@@ -41,13 +41,13 @@ urlpatterns = [
     path('proveedor/index/', IndexProveedorView.as_view(), name='indexProveedor'),
     path('proveedor/delete/<str:encrypted_id>/', DeleteProveedorView.as_view(), name='deleteProveedor'),
 
-    #Api para reportes 
-    #path('reporteMovimiento/', CreateReporteMovimiento.as_view(), name='createReporte')
-
     #Reporte de ventas 
     path('reporteVentas/', ReporteVentas.as_view(), name='createReporte'),
 
     #Reporte de ganancias
-    path('reporteGanancias/', ReporteGanancias.as_view(), name='createReporte')
+    path('reporteGanancias/', ReporteGanancias.as_view(), name='createReporte'),
+
+    #Reporte de ganancias
+    path('reporteMovimiento/', ReporteMovimientos.as_view(), name='createReporte')
 
 ]

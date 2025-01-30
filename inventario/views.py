@@ -352,7 +352,7 @@ class ProductoDetalleIngresoCreate(APIView):
             fecha_expiracion__isnull=True
         ).first()
 
-        if producto_detalle_vacio and not producto_detalle_vacio.almacen and not producto_detalle_vacio.fecha_expiracion:
+        if producto_detalle_vacio and not producto_detalle_vacio.fecha_expiracion:
             # Actualizar los campos vacíos
             producto_detalle_vacio.cantidad_por_presentacion = int(data['cantidad_por_presentacion'])
             producto_detalle_vacio.total_unidades = int(data['unidades_por_presentacion'])

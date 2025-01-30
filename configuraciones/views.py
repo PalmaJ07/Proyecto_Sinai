@@ -11,7 +11,8 @@ from rest_framework.pagination import PageNumberPagination
 from .models import *
 from usuarios.models import  User
 import jwt, datetime
-from inventario.models import ProductoDetalleIngreso, Producto, ConfigUnidadMedida, ProductoMovimiento, ProductoDetalle  # Ajusta según tus modelos
+from inventario.models import ProductoDetalleIngreso, Producto, ConfigUnidadMedida, ProductoMovimiento
+from inventario.serializers import ProductoMovimientoSerializer # Ajusta según tus modelos
 from datetime import datetime
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import letter
@@ -802,7 +803,7 @@ class ReporteVentas(APIView):
             'ventas': [{'id': venta.id, 'cliente': venta.cliente, 'total_venta': venta.total_venta, 'fecha_venta': venta.fecha_venta} for venta in ventas]
         }, status=status.HTTP_200_OK)
     
-##########Reportes de ventas##############
+##########Reportes de ganancias##############
 
 class ReporteGanancias(APIView):
     def get(self, request):
@@ -850,3 +851,53 @@ class ReporteGanancias(APIView):
             'ventas': [{'id': venta.id, 'cliente': venta.cliente, 'total_venta': venta.total_venta, 'fecha_venta': venta.fecha_venta} for venta in ventas]
         }, status=status.HTTP_200_OK)
     
+##########Reportes de movimientos##############
+class ReporteMovimientos(APIView):
+    def get(self, request):
+        # Filtrar por fechas, si se pasan como parámetros
+        fecha_inicio = request.query_params.get('fecha_inicio')
+        fecha_fin = request.query_params.get('fecha_fin')
+        fecha = request.query_params.get('fecha')
+
+        # Convertir las fechas si se pasan como parámetros
+        if fecha_inicio:
+            fecha_inicio = datetime.strptime(fecha_inicio, '%Y-%m-%d')
+        if fecha_fin:
+            fecha_fin = datetime.strptime(fecha_fin, '%Y-%m-%d')
+        if fecha:
+            fecha = datetime.strptime(fecha, '%Y-%m-%d')
+
+        # Filtrar ProductoDetalleIngreso que no estén eliminados y que tengan producto_movimiento no nulo
+        queryset = ProductoDetalleIngreso.objects.filter(
+            producto_movimiento__isnull=False,
+            deleted_at__isnull=True
+        )
+
+        # Filtrar por fecha si se pasó un rango de fechas
+        if fecha_inicio and fecha_fin:
+            queryset = queryset.filter(fecha_ingreso__range=[fecha_inicio, fecha_fin])
+        elif fecha_inicio:
+            queryset = queryset.filter(fecha_ingreso__gte=fecha_inicio)
+        elif fecha_fin:
+            queryset = queryset.filter(fecha_ingreso__lte=fecha_fin)
+        elif fecha:
+            queryset = queryset.filter(fecha_ingreso=fecha)
+
+        # Obtener los movimientos relacionados
+        movimientos = []
+        for detalle_ingreso in queryset:
+            # Obtener los movimientos relacionados con el ProductoDetalleIngreso
+            producto_movimiento = detalle_ingreso.producto_movimiento
+            if producto_movimiento:
+                movimiento_data = ProductoMovimientoSerializer(producto_movimiento).data
+                movimientos.append({
+                    'producto': detalle_ingreso.producto.descripcion,
+                    'producto_detalle_origen': movimiento_data['producto_detalle_origen'],
+                    'producto_detalle_destino': movimiento_data['producto_detalle_destino'],
+                    'cantidad_por_presentacion': movimiento_data['cantidad_por_presentacion'],
+                    'unidades_por_presentacion': movimiento_data['unidades_por_presentacion'],
+                    'fecha': movimiento_data['fecha'],
+                    'fecha_expiracion': movimiento_data['fecha_expiracion'],
+                })
+
+        return Response(movimientos, status=status.HTTP_200_OK)
