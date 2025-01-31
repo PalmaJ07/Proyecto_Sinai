@@ -19,14 +19,15 @@ class VentaDetalleSerializer(serializers.ModelSerializer):
         ]
 
     def get_encrypted_id(self, obj):
+        if isinstance(obj, dict):
+            return None  # Retornar None si aún no hay ID
         return base64.urlsafe_b64encode(str(obj.id).encode()).decode()
 
 
 class VentaSerializer(serializers.ModelSerializer):
     encrypted_id = serializers.SerializerMethodField()
-    cliente = serializers.PrimaryKeyRelatedField(queryset=Cliente.objects.all(), allow_null=True)
+    cliente = serializers.PrimaryKeyRelatedField(queryset=Cliente.objects.all(), required=False)
     user = serializers.PrimaryKeyRelatedField(queryset=User.objects.all())
-    detalles = VentaDetalleSerializer(many=True, read_only=True)
     
     class Meta:
         model = Venta
@@ -34,7 +35,7 @@ class VentaSerializer(serializers.ModelSerializer):
             'encrypted_id', 'id', 'cliente', 'user', 'cliente_nombre', 
             'total_sin_descuento', 'descuento', 'descuento_porcentual', 
             'total_venta', 'fecha_venta', 'comentario', 'comentario_devolucion', 
-            'devolucion', 'anulacion', 'detalles', 
+            'devolucion', 'anulacion', 
             'created_user', 'updated_user', 'deleted_user', 
             'created_at', 'updated_at', 'deleted_at'
         ]
