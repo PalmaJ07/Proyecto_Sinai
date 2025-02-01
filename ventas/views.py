@@ -100,6 +100,12 @@ class RegisterVentaDetalle(APIView):
         cantidad = int(data.get('cantidad', 0))
         unidades = data.get('unidades', False)  # True si se vende en unidades, False si se vende por presentación
 
+        # Convertir explícitamente a booleano si viene como string o número
+        if isinstance(unidades, str):
+            unidades = unidades.strip() in ['1', 'true', 'True']
+        elif isinstance(unidades, int):
+            unidades = unidades == 1
+
         if unidades:
             if producto_detalle.cantidad_por_presentacion < cantidad:
                 return Response({'error': 'Cantidad excede el inventario disponible por presentación.'}, status=status.HTTP_400_BAD_REQUEST)
