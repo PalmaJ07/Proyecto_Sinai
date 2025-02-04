@@ -28,11 +28,14 @@ class VentaSerializer(serializers.ModelSerializer):
     encrypted_id = serializers.SerializerMethodField()
     cliente = serializers.PrimaryKeyRelatedField(queryset=Cliente.objects.all(), required=False)
     user = serializers.PrimaryKeyRelatedField(queryset=User.objects.all())
+    empleado_nombre = serializers.CharField(source='user.name', read_only=True)
+
+    print(empleado_nombre)
     
     class Meta:
         model = Venta
         fields = [
-            'encrypted_id', 'id', 'cliente', 'user', 'cliente_nombre', 
+            'encrypted_id', 'id', 'cliente', 'user','empleado_nombre', 'cliente_nombre', 
             'total_sin_descuento', 'descuento', 'descuento_porcentual', 
             'total_venta', 'fecha_venta', 'comentario', 'comentario_devolucion', 
             'devolucion', 'anulacion', 

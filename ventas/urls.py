@@ -8,4 +8,8 @@ urlpatterns = [
 
     path('ventasDetalleCreate/', RegisterVentaDetalle.as_view(), name='create-venta'),
 
+    path('indexVenta/', IndexVenta.as_view(), name='index-venta'),
+
+    path('indexDetalleVenta/', IndexVentaDetalle.as_view(), name='index-ventaDetalle'),
+
 ]
