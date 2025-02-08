@@ -97,10 +97,10 @@ DATABASES = {
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.mysql",
-        "NAME": "dbsinai",
+        "NAME": "sinai",
         "USER": "root",
-        "PASSWORD": "LI0Kb(UlK=&4V^U,%?>)h)!#%vrGVpVM",
-        "HOST": "ls-6ddd2c089a2ce72dac8d9bc09e615ecf57ad38f7.cx6o004wkg7p.us-east-1.rds.amazonaws.com",
+        "PASSWORD": "?QjHYZN(8Yn&$&;fu%]~Ciy#h^?5*?0q",
+        "HOST": "ls-80b8f6fbbac36a98ff5bc4b87a850257b6daf16b.c3c666gquos3.us-east-1.rds.amazonaws.com",
         "PORT": "3306",
     }
 }

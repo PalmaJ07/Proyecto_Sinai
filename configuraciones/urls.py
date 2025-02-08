@@ -48,6 +48,11 @@ urlpatterns = [
     path('reporteGanancias/', ReporteGanancias.as_view(), name='createReporte'),
 
     #Reporte de ganancias
-    path('reporteMovimiento/', ReporteMovimientos.as_view(), name='createReporte')
+    path('reporteMovimiento/', ReporteMovimientos.as_view(), name='createReporte'),
+
+    #Dashboards
+    path('dashboardusuarios/', VendedoresMasVentas.as_view(), name='dashboards'),
+    path('dashboardproducto/', ProductosMasVendidos.as_view(), name='dashboards'),
+    path('dashboardganancia/', GananciasDelDia.as_view(), name='dashboards')
 
 ]

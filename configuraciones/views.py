@@ -13,11 +13,14 @@ from usuarios.models import  User
 import jwt, datetime
 from inventario.models import ProductoDetalleIngreso, Producto, ConfigUnidadMedida, ProductoMovimiento
 from inventario.serializers import ProductoMovimientoSerializer # Ajusta según tus modelos
+from usuarios.serializers import ClienteSerializer
 from datetime import datetime
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import letter
 from ventas.models import Venta, VentaDetalle
 from django.db.models import Sum, F
+from decimal import Decimal
+from django.utils.timezone import now
     
 # Create your views here.
 class CustomPagination(PageNumberPagination):
@@ -816,39 +819,56 @@ class ReporteGanancias(APIView):
         ventas = Venta.objects.all()
 
         if fecha:
-            # Si solo se pasa una fecha, filtrar por esa fecha
             ventas = ventas.filter(fecha_venta=fecha)
         elif fecha_inicio and fecha_fin:
-            # Si se pasan ambas fechas, filtrar por el rango
             ventas = ventas.filter(fecha_venta__gte=fecha_inicio, fecha_venta__lte=fecha_fin)
         elif fecha_inicio:
-            # Si solo se pasa la fecha de inicio
             ventas = ventas.filter(fecha_venta__gte=fecha_inicio)
         elif fecha_fin:
-            # Si solo se pasa la fecha de fin
             ventas = ventas.filter(fecha_venta__lte=fecha_fin)
 
         # Calcular el total de ventas
         total_ventas = ventas.aggregate(total=Sum('total_venta'))
 
-        # Calcular el costo total de los productos vendidos
-        total_costos = VentaDetalle.objects.filter(venta__in=ventas).annotate(
-            costo_total=F('cantidad') * F('producto_detalle__costo')  # Cálculo del costo
-        ).aggregate(total_costos=Sum('costo_total'))
+        # Calcular el costo total de los productos vendidos, considerando unidades o presentaciones
+        total_costos = Decimal(0)
+
+        for venta in ventas:
+            for detalle in venta.detalles.all():
+                producto_detalle = detalle.producto_detalle
+
+                # Obtener el ingreso de productos en base al producto_detalle
+                producto_ingreso = ProductoDetalleIngreso.objects.filter(producto_detalle=producto_detalle).first()
+
+                if producto_ingreso:
+                    if detalle.unidades == 1:  # Si es por unidad
+                        costo = producto_ingreso.precio_compra_unidades
+                        cantidad = detalle.cantidad  # Usar la cantidad de unidades
+                    elif detalle.unidades == 0:  # Si es por presentación
+                        costo = producto_ingreso.precio_compra_presentacion
+                        cantidad = detalle.cantidad  # En este caso usamos cantidad, pero se calcula con presentación
+
+                    # Calculando el costo total
+                    total_costos += costo * cantidad
 
         # Si no hay ventas o costos, establecer los valores como 0
-        total_ventas_value = total_ventas['total'] if total_ventas['total'] else 0
-        total_costos_value = total_costos['total_costos'] if total_costos['total_costos'] else 0
+        total_ventas_value = Decimal(total_ventas['total']) if total_ventas['total'] else Decimal(0)
+        total_costos_value = total_costos if total_costos else Decimal(0)
 
         # Calcular las ganancias (ventas - costos)
         ganancias = total_ventas_value - total_costos_value
 
         # Devolver el reporte de ganancias
         return Response({
-            'ganancias': ganancias,
-            'total_ventas': total_ventas_value,
-            'total_costos': total_costos_value,
-            'ventas': [{'id': venta.id, 'cliente': venta.cliente, 'total_venta': venta.total_venta, 'fecha_venta': venta.fecha_venta} for venta in ventas]
+            'ganancias': float(ganancias),  # Convertir ganancias a float si es necesario
+            'total_ventas': float(total_ventas_value),  # Convertir total_ventas a float
+            'total_costos': float(total_costos_value),  # Convertir total_costos a float
+            'ventas': [{
+                'id': venta.id,
+                'cliente': ClienteSerializer(venta.cliente).data,
+                'total_venta': venta.total_venta,
+                'fecha_venta': venta.fecha_venta
+            } for venta in ventas]
         }, status=status.HTTP_200_OK)
     
 ##########Reportes de movimientos##############
@@ -901,3 +921,50 @@ class ReporteMovimientos(APIView):
                 })
 
         return Response(movimientos, status=status.HTTP_200_OK)
+    
+class ProductosMasVendidos(APIView):
+    def get(self, request):
+        productos_vendidos = (
+            VentaDetalle.objects.values("producto_detalle__id", "producto_detalle__producto__descripcion")
+            .annotate(total_vendido=Sum("cantidad"))
+            .order_by("-total_vendido")[:10]  # Obtener los 10 más vendidos
+        )
+
+        return Response(productos_vendidos)
+    
+class GananciasDelDia(APIView):
+    def get(self, request):
+        fecha_hoy = now().date()
+
+        # Total de ventas del día
+        total_ventas = Venta.objects.filter(fecha_venta=fecha_hoy).aggregate(total=Sum("total_venta"))["total"] or Decimal(0)
+
+        # Cálculo de costos
+        total_costos = Decimal(0)
+        ventas_detalles = VentaDetalle.objects.filter(venta__fecha_venta=fecha_hoy)
+
+        for detalle in ventas_detalles:
+            producto_ingreso = ProductoDetalleIngreso.objects.filter(producto_detalle=detalle.producto_detalle).first()
+            if producto_ingreso:
+                costo = producto_ingreso.precio_compra_unidades if detalle.unidades == 1 else producto_ingreso.precio_compra_presentacion
+                total_costos += costo * detalle.cantidad
+
+        # Cálculo de ganancias
+        ganancias = total_ventas - total_costos
+
+        return Response({
+            "fecha": str(fecha_hoy),
+            "total_ventas": float(total_ventas),
+            "total_costos": float(total_costos),
+            "ganancias": float(ganancias)
+        })
+
+class VendedoresMasVentas(APIView):
+    def get(self, request):
+        vendedores = (
+            Venta.objects.values("user__id", "user__name")  # 'user__name' según tu modelo
+            .annotate(total_ventas=Sum("total_venta"))
+            .order_by("-total_ventas")[:10]  # Top 10 vendedores
+        )
+
+        return Response(vendedores)
