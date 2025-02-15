@@ -8,11 +8,12 @@ class VentaDetalleSerializer(serializers.ModelSerializer):
     encrypted_id = serializers.SerializerMethodField()
     producto_detalle = serializers.PrimaryKeyRelatedField(queryset=ProductoDetalle.objects.all())
     venta = serializers.PrimaryKeyRelatedField(queryset=Venta.objects.all())
+    n_producto = serializers.CharField(source='producto_detalle.producto.descripcion', read_only=True)
 
     class Meta:
         model = VentaDetalle
         fields = [
-            'encrypted_id', 'id', 'producto_detalle', 'venta', 'descuento', 'cantidad', 
+            'encrypted_id', 'id', 'producto_detalle','n_producto', 'venta', 'descuento', 'cantidad', 
             'unidades', 'descuento_porcentual', 'precio_venta', 
             'created_user', 'updated_user', 'deleted_user', 
             'created_at', 'updated_at', 'deleted_at'
@@ -26,9 +27,9 @@ class VentaDetalleSerializer(serializers.ModelSerializer):
 
 class VentaSerializer(serializers.ModelSerializer):
     encrypted_id = serializers.SerializerMethodField()
-    cliente = serializers.PrimaryKeyRelatedField(queryset=Cliente.objects.all(), required=False)
+    cliente = serializers.PrimaryKeyRelatedField(queryset=Cliente.objects.all(), required=False, allow_null=True)
     user = serializers.PrimaryKeyRelatedField(queryset=User.objects.all())
-    empleado_nombre = serializers.CharField(source='user.name', read_only=True)
+    empleado_nombre = serializers.CharField(source='user.name', read_only=True, required=False, allow_null=True)
 
     print(empleado_nombre)
     

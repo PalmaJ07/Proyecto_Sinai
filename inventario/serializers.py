@@ -27,7 +27,7 @@ class ProductoDetalleSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ProductoDetalle
-        fields = ['encrypted_id','id', 'producto','n_producto', 'config_unidad_medida', 'peso', 
+        fields = ['encrypted_id','id', 'producto',' n_producto', 'config_unidad_medida', 'peso', 
                   'config_presentacion_producto', 'cantidad_por_presentacion', 
                   'unidades_por_presentacion', 'total_unidades', 'almacen', 
                   'precio_venta_presentacion', 'precio_venta_unidades', 'proveedor', 'fecha_expiracion',

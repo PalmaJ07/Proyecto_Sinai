@@ -14,7 +14,7 @@ import jwt, datetime
 from inventario.models import ProductoDetalleIngreso, Producto, ConfigUnidadMedida, ProductoMovimiento
 from inventario.serializers import ProductoMovimientoSerializer # Ajusta según tus modelos
 from usuarios.serializers import ClienteSerializer
-from datetime import datetime
+from datetime import datetime, timedelta
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import letter
 from ventas.models import Venta, VentaDetalle
@@ -932,28 +932,42 @@ class ProductosMasVendidos(APIView):
 
         return Response(productos_vendidos)
     
-class GananciasDelDia(APIView):
+class GananciasSemanales(APIView):
     def get(self, request):
-        fecha_hoy = now().date()
+        fecha_hoy = request.GET.get('fecha')  # Fecha base proporcionada por el usuario
+        
+        if not fecha_hoy:
+            return Response({"error": "Se requiere una fecha"}, status=400)
+        
+        try:
+            fecha_hoy = datetime.strptime(fecha_hoy, "%Y-%m-%d").date()
+        except ValueError:
+            return Response({"error": "Formato de fecha inválido. Use AAAA-MM-DD"}, status=400)
 
-        # Total de ventas del día
-        total_ventas = Venta.objects.filter(fecha_venta=fecha_hoy).aggregate(total=Sum("total_venta"))["total"] or Decimal(0)
+        # Calcular el inicio y fin de la semana (Lunes a Domingo)
+        fecha_inicio = fecha_hoy - timedelta(days=fecha_hoy.weekday())  # Lunes de la semana
+        fecha_fin = fecha_inicio + timedelta(days=6)  # Domingo de la misma semana
 
-        # Cálculo de costos
+        # Total de ventas en la semana
+        total_ventas = Venta.objects.filter(fecha_venta__range=[fecha_inicio, fecha_fin]).aggregate(total=Sum("total_venta"))["total"] or Decimal(0)
+        total_ventas = Decimal(total_ventas)  # Asegurar conversión a Decimal
+
+        # Calcular costos de la semana
         total_costos = Decimal(0)
-        ventas_detalles = VentaDetalle.objects.filter(venta__fecha_venta=fecha_hoy)
+        ventas_detalles = VentaDetalle.objects.filter(venta__fecha_venta__range=[fecha_inicio, fecha_fin])
 
         for detalle in ventas_detalles:
             producto_ingreso = ProductoDetalleIngreso.objects.filter(producto_detalle=detalle.producto_detalle).first()
             if producto_ingreso:
                 costo = producto_ingreso.precio_compra_unidades if detalle.unidades == 1 else producto_ingreso.precio_compra_presentacion
-                total_costos += costo * detalle.cantidad
+                total_costos += Decimal(costo) * detalle.cantidad  # Convertir costo a Decimal
 
         # Cálculo de ganancias
         ganancias = total_ventas - total_costos
 
         return Response({
-            "fecha": str(fecha_hoy),
+            "fecha_inicio": str(fecha_inicio),
+            "fecha_fin": str(fecha_fin),
             "total_ventas": float(total_ventas),
             "total_costos": float(total_costos),
             "ganancias": float(ganancias)

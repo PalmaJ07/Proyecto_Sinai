@@ -53,6 +53,6 @@ urlpatterns = [
     #Dashboards
     path('dashboardusuarios/', VendedoresMasVentas.as_view(), name='dashboards'),
     path('dashboardproducto/', ProductosMasVendidos.as_view(), name='dashboards'),
-    path('dashboardganancia/', GananciasDelDia.as_view(), name='dashboards')
+    path('dashboardganancia/', GananciasSemanales.as_view(), name='dashboards')
 
 ]
